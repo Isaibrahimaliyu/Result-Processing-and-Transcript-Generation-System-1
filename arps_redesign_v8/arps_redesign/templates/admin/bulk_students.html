@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Import Students{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link active"><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-cloud-upload"></i></div>
+      <div>
+        <h4 class="page-title">Bulk Student Import</h4>
+        <p class="page-subtitle">Upload a CSV file to register multiple students at once</p>
+      </div>
+    </div>
+  </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+  <!-- Upload form -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header ch-primary"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Upload Student CSV</div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label class="form-label">CSV File <span class="req">*</span></label>
+            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+          </div>
+          <div class="alert alert-info" style="font-size:.77rem;">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>Default password for all imported students is <strong>arps1234</strong>. Advise students to change it on first login.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="justify-content:center;">
+            <i class="bi bi-cloud-upload"></i> Upload &amp; Import
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% if errors %}
+    <div class="card" style="border:1.5px solid var(--danger);">
+      <div class="card-header" style="background:var(--danger-bg);color:var(--danger);border-bottom:1px solid #FECACA;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errors|length }} Issue(s) Found
+      </div>
+      <div class="card-body p-0">
+        {% for e in errors %}
+        <div style="padding:.5rem .85rem;border-bottom:1px solid var(--border);font-size:.78rem;color:var(--danger);">
+          <i class="bi bi-x-circle me-1"></i>{{ e }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if imported > 0 %}
+    <div class="alert alert-success mt-3">
+      <i class="bi bi-check-circle-fill"></i>
+      <div><strong>{{ imported }}</strong> student(s) imported successfully.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Format guide -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header ch-surface"><i class="bi bi-info-circle me-2"></i>CSV Format Guide</div>
+      <div class="card-body">
+        <p style="font-size:.8rem;color:var(--n500);margin-bottom:.75rem;">Your CSV file must contain the following columns as the first row (headers):</p>
+        <div style="overflow-x:auto;">
+          <table class="portal-table" style="font-size:.77rem;">
+            <thead><tr><th>matric_no</th><th>first_name</th><th>last_name</th><th>middle_name</th><th>level</th><th>entry_year</th></tr></thead>
+            <tbody>
+              <tr><td>U22/FNS/CSC/001</td><td>Amina</td><td>Bello</td><td>Grace</td><td>100</td><td>2022</td></tr>
+              <tr><td>U22/FNS/CSC/002</td><td>Emeka</td><td>Chukwu</td><td></td><td>100</td><td>2022</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul style="font-size:.77rem;color:var(--n500);margin-top:.75rem;padding-left:1.1rem;">
+          <li><code>matric_no</code>, <code>first_name</code>, <code>last_name</code> — required</li>
+          <li><code>level</code> — must be one of: 100, 200, 300, 400</li>
+          <li><code>middle_name</code> and <code>entry_year</code> — optional</li>
+          <li>Duplicate matric numbers are skipped with a warning</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="font-size:.78rem;">
+      <i class="bi bi-download"></i>
+      <div>
+        Download the
+        <a href="{{ url_for('admin.download_student_template') }}" style="font-weight:700;">sample CSV template</a>
+        and fill it with your students' data before uploading.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

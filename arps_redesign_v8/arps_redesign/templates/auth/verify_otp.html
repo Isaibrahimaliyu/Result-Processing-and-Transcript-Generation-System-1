@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=localStorage.getItem('arps-theme')||'light';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enter OTP | ARPTGS — IBB University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/arps.css') }}" rel="stylesheet">
+  <style>
+    .otp-input {
+      width: 52px; height: 58px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem; font-weight: 700;
+      border: 2px solid var(--border-s);
+      border-radius: var(--r);
+      outline: none;
+      color: var(--g800);
+      background: var(--surface);
+      transition: border-color .15s, box-shadow .15s;
+      -webkit-appearance: none;
+    }
+    .otp-input:focus {
+      border-color: var(--g500);
+      box-shadow: 0 0 0 3px rgba(46,125,58,.12);
+    }
+    .otp-input.filled {
+      border-color: var(--g500);
+      background: var(--g50);
+    }
+    .otp-row { display: flex; gap: .55rem; justify-content: center; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%,60%{transform:translateX(-6px)}
+      40%,80%{transform:translateX(6px)}
+    }
+    .otp-row.error { animation: shake .35s ease; }
+  </style>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="flash-container">
+    {% for cat, msg in messages %}
+    <div class="flash-toast toast-{{ cat }}">
+      <i class="bi bi-info-circle-fill toast-icon"></i>
+      <span>{{ msg }}</span>
+      <button class="toast-close"><i class="bi bi-x"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:1.5rem;">
+  <div style="width:100%;max-width:420px;">
+
+    <div style="background:#fff;border-radius:var(--r-xl);padding:2.25rem;box-shadow:var(--sh-xl);border:1px solid var(--border);">
+
+      <!-- Icon -->
+      <div style="width:56px;height:56px;background:var(--g100);border:2px solid var(--g200);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:1.5rem;">
+        📬
+      </div>
+
+      <!-- Heading -->
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--g800);text-align:center;margin-bottom:.35rem;">
+        Check your email
+      </h2>
+      <p style="font-size:.8rem;color:var(--n500);text-align:center;margin-bottom:.5rem;line-height:1.6;">
+        We sent a 6-digit code to
+        <strong style="color:var(--g700);">{{ email_hint }}</strong>
+      </p>
+      <p style="font-size:.75rem;color:var(--n400);text-align:center;margin-bottom:1.75rem;">
+        Enter it below. The code expires in 15 minutes.
+      </p>
+
+      <!-- Progress steps -->
+      <div style="display:flex;align-items:center;margin-bottom:1.75rem;">
+        {% for i, label in [(1,'Enter ID'),(2,'Verify OTP'),(3,'New Password')] %}
+        <div style="display:flex;align-items:center;flex:1;{% if not loop.last %}margin-right:.25rem;{% endif %}">
+          <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;
+            {% if i == 1 %}background:var(--success);color:#fff;
+            {% elif i == 2 %}background:var(--g700);color:#fff;
+            {% else %}background:var(--n100);color:var(--n400);{% endif %}">
+            {% if i == 1 %}<i class="bi bi-check" style="font-size:.75rem;"></i>{% else %}{{ i }}{% endif %}
+          </div>
+          <span style="font-size:.68rem;font-weight:{% if i == 2 %}600{% else %}400{% endif %};
+                       color:{% if i == 2 %}var(--g700){% elif i == 1 %}var(--success){% else %}var(--n400){% endif %};
+                       margin-left:.3rem;white-space:nowrap;">{{ label }}</span>
+          {% if not loop.last %}<div style="flex:1;height:1px;background:{% if i == 1 %}var(--g300){% else %}var(--border){% endif %};margin:0 .4rem;"></div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.verify_otp') }}" id="otpForm">
+        <!-- Hidden single field (filled by JS) -->
+        <input type="hidden" name="otp_full" id="otp_full">
+
+        <div class="otp-row" id="otpRow">
+          {% for i in range(1, 7) %}
+          <input type="text" maxlength="1" class="otp-input"
+                 id="otp_{{ i }}" name="otp_{{ i }}"
+                 inputmode="numeric" pattern="[0-9]"
+                 autocomplete="{% if i==1 %}one-time-code{% else %}off{% endif %}">
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1.5rem;" id="verifyBtn" disabled>
+          <i class="bi bi-shield-check"></i> Verify Code
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.25rem;display:flex;align-items:center;justify-content:center;gap:1rem;">
+        <a href="{{ url_for('auth.resend_otp') }}" style="font-size:.78rem;color:var(--g700);font-weight:600;">
+          <i class="bi bi-arrow-clockwise me-1"></i>Resend code
+        </a>
+        <span style="color:var(--border-s);">|</span>
+        <a href="{{ url_for('auth.forgot_password') }}" style="font-size:.78rem;color:var(--n500);">
+          Try different account
+        </a>
+      </div>
+
+      <!-- Countdown -->
+      <p style="text-align:center;font-size:.72rem;color:var(--n400);margin-top:.75rem;">
+        Code expires in <span id="countdown" style="font-weight:700;color:var(--warning);">15:00</span>
+      </p>
+    </div>
+
+    <p style="text-align:center;font-size:.7rem;color:var(--n400);margin-top:1.25rem;">
+      © 2026 Ibrahim Badamasi Babangida University, Lapai
+    </p>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/arps.js') }}"></script>
+<script>
+// OTP input — auto-advance, backspace, paste handling
+const inputs = Array.from(document.querySelectorAll('.otp-input'));
+const btn    = document.getElementById('verifyBtn');
+const full   = document.getElementById('otp_full');
+const row    = document.getElementById('otpRow');
+
+function updateFull() {
+  const val = inputs.map(i => i.value).join('');
+  full.value = val;
+  btn.disabled = val.length < 6;
+  inputs.forEach(i => i.classList.toggle('filled', i.value !== ''));
+}
+
+inputs.forEach((input, idx) => {
+  input.addEventListener('input', e => {
+    const val = e.target.value.replace(/\D/g,'');
+    input.value = val.slice(-1);
+    updateFull();
+    if (val && idx < 5) inputs[idx+1].focus();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !input.value && idx > 0) {
+      inputs[idx-1].value = '';
+      inputs[idx-1].focus();
+      updateFull();
+    }
+  });
+  input.addEventListener('paste', e => {
+    const pasted = (e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);
+    if (pasted.length >= 2) {
+      e.preventDefault();
+      pasted.split('').forEach((ch, i) => { if (inputs[i]) inputs[i].value = ch; });
+      updateFull();
+      inputs[Math.min(pasted.length, 5)].focus();
+    }
+  });
+});
+inputs[0]?.focus();
+
+// Shake on failed flash
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    {% if cat == 'danger' %}
+    row.classList.add('error');
+    setTimeout(() => row.classList.remove('error'), 400);
+    {% endif %}
+  {% endfor %}
+{% endwith %}
+
+// 15-minute countdown
+let secs = 900;
+const cd = document.getElementById('countdown');
+const timer = setInterval(() => {
+  secs--;
+  if (secs <= 0) { clearInterval(timer); cd.textContent = 'Expired'; cd.style.color='var(--danger)'; return; }
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  cd.textContent = `${m}:${s}`;
+  if (secs < 120) cd.style.color = 'var(--danger)';
+}, 1000);
+</script>
+</body>
+</html>

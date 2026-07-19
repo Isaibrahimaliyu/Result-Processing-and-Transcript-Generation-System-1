@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Academic Records{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Student Portal</div>
+<a href="{{ url_for('student.dashboard') }}"        class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="{{ url_for('student.results') }}"          class="sidebar-link active"><i class="bi bi-bar-chart-line"></i> Academic Records</a>
+<a href="{{ url_for('student.my_courses') }}"       class="sidebar-link "><i class="bi bi-book"></i> My Courses</a>
+<a href="{{ url_for('student.register_courses') }}" class="sidebar-link "><i class="bi bi-pencil-square"></i> Register Courses</a>
+<a href="{{ url_for('student.statement') }}"        class="sidebar-link "><i class="bi bi-file-earmark-text"></i> Statement of Results</a>
+<a href="{{ url_for('student.predict_cgpa') }}"     class="sidebar-link "><i class="bi bi-graph-up-arrow"></i> CGPA Predictor</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('student.update_profile') }}"   class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('student.change_password') }}"  class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-bar-chart-line"></i></div>
+      <div>
+        <h4 class="page-title">Academic Records</h4>
+        <p class="page-subtitle">{{ student.full_name }} &mdash; {{ student.matric_no }}</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 no-print">
+      <button onclick="printPage()" class="btn btn-outline btn-sm" style="border-color:rgba(255,255,255,.3);color:#fff;">
+        <i class="bi bi-printer"></i> Print
+      </button>
+      <a href="{{ url_for('student.statement_pdf') }}" class="btn btn-gold btn-sm">
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if cgpa_data.semester_breakdown %}
+  {% for sem in cgpa_data.semester_breakdown %}
+  <div class="card mb-4">
+    <div style="background:var(--g700);color:#fff;padding:.7rem 1.1rem;border-radius:var(--r) var(--r) 0 0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-weight:700;font-size:.88rem;">
+        <i class="bi bi-calendar-week me-2"></i>{{ sem.session_year }} &mdash; {{ sem.semester }} Semester
+      </span>
+      <span style="background:rgba(201,146,42,.25);border:1px solid rgba(201,146,42,.4);color:var(--g200);padding:2px 10px;border-radius:20px;font-size:.75rem;font-weight:700;">
+        GPA: {{ "%.2f"|format(sem.gpa) }}
+      </span>
+    </div>
+    <div class="card-body p-0">
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Code</th><th>Course Title</th>
+            <th style="text-align:center">Units</th>
+            <th style="text-align:center">CA (30)</th>
+            <th style="text-align:center">Exam (70)</th>
+            <th style="text-align:center">Total</th>
+            <th style="text-align:center">Grade</th>
+            <th style="text-align:center">GP</th>
+            <th style="text-align:center">QP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in sem.courses %}
+          <tr>
+            <td><strong>{{ c.code }}</strong></td>
+            <td>{{ c.title }}</td>
+            <td style="text-align:center">{{ c.credit_unit }}</td>
+            <td style="text-align:center">{{ "%.1f"|format(c.ca_score) }}</td>
+            <td style="text-align:center">{{ "%.1f"|format(c.exam_score) }}</td>
+            <td style="text-align:center;font-weight:700;">{{ "%.1f"|format(c.total_score) }}</td>
+            <td style="text-align:center"><span class="grade-chip g-{{ c.grade }}">{{ c.grade }}</span></td>
+            <td style="text-align:center">{{ c.grade_point }}</td>
+            <td style="text-align:center">{{ "%.1f"|format(c.quality_points) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Semester Totals</td>
+            <td style="text-align:center">{{ sem.total_units }}</td>
+            <td colspan="4"></td>
+            <td colspan="2" style="text-align:center">QP: {{ "%.2f"|format(sem.quality_points) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- CGPA Summary -->
+  <div class="card">
+    <div class="card-body" style="background:linear-gradient(135deg,var(--g700),var(--g500));border-radius:var(--r);padding:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;text-align:center;">
+        {% for label, value in [
+          ('Total Credit Units', cgpa_data.total_units),
+          ('Total Quality Points', "%.2f"|format(cgpa_data.total_quality_points)),
+          ('Cumulative GPA', "%.2f"|format(cgpa_data.cgpa)),
+        ] %}
+        <div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem;">{{ label }}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--g200);">{{ value }}</div>
+        </div>
+        {% endfor %}
+        <div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.3rem;">Classification</div>
+          <div style="font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:#6EE7B7;margin-top:.4rem;">{{ cgpa_data.degree_class }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <!-- RESULTS NOT YET PUBLISHED -->
+  <div style="text-align:center;padding:4rem 2rem;">
+    <div style="width:90px;height:90px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:2px solid var(--border);">
+      <i class="bi bi-hourglass-split" style="font-size:2.2rem;color:var(--g700);"></i>
+    </div>
+    <h3 style="font-family:'Playfair Display',serif;color:var(--g700);margin-bottom:.75rem;">Results Not Yet Released</h3>
+    <p style="color:var(--n500);max-width:460px;margin:0 auto 1.5rem;line-height:1.7;">
+      Your academic results for the current semester have not been officially released yet.
+      Results will appear here once the Examination Officer publishes them.
+      Please check back later or contact the Department Office.
+    </p>
+    <div style="display:inline-flex;align-items:center;gap:.5rem;background:var(--warning-bg);border:1.5px solid #FDE68A;color:var(--warning);padding:.6rem 1.25rem;border-radius:var(--r-sm);font-size:.82rem;font-weight:600;">
+      <i class="bi bi-info-circle-fill"></i>
+      Results are published by the Examination Officer after official vetting.
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

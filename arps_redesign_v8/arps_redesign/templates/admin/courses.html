@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Course Directory{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link active"><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-book"></i></div>
+      <div>
+        <h4 class="page-title">Course Directory</h4>
+        <p class="page-subtitle">{{ courses|length }} course(s) in the system</p>
+      </div>
+    </div>
+    <button onclick="openModal('addCourseModal')" class="btn btn-gold btn-sm no-print">
+      <i class="bi bi-plus-lg"></i> Add Course
+    </button>
+  </div>
+</div>
+
+<!-- Level filter tabs -->
+<div class="portal-tabs no-print">
+  <button class="portal-tab level-tab active" onclick="filterLevel('all',this)">All Levels</button>
+  {% for l in ['100','200','300','400'] %}
+  <button class="portal-tab level-tab" onclick="filterLevel('{{ l }}',this)">{{ l }} Level</button>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="portal-table" id="coursesTable">
+      <thead>
+        <tr><th>Code</th><th>Course Title</th><th style="text-align:center">Units</th><th>Level</th><th>Semester</th><th>Lecturer</th><th style="text-align:center">Status</th><th class="no-print">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for c in courses %}
+        <tr data-level="{{ c.level }}">
+          <td><strong>{{ c.course_code }}</strong></td>
+          <td>{{ c.course_title }}</td>
+          <td style="text-align:center;"><span class="badge badge-navy">{{ c.credit_unit }}</span></td>
+          <td>{{ c.level }} Level</td>
+          <td><span class="badge badge-neutral">{{ c.semester }}</span></td>
+          <td style="font-size:.8rem;color:var(--n500);">{{ c.lecturer.full_name if c.lecturer else '—' }}</td>
+          <td style="text-align:center;">
+            {% if c.is_active %}<span class="badge badge-success">Active</span>
+            {% else %}<span class="badge badge-neutral">Inactive</span>{% endif %}
+          </td>
+          <td class="no-print">
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline btn-sm" title="Edit"
+                onclick="openEditCourseModal({{ c.id }},'{{ c.course_code }}','{{ c.course_title|replace("'","\\'") }}',{{ c.credit_unit }},'{{ c.semester }}','{{ c.level }}',{{ c.lecturer_id or 'null' }})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="POST" action="{{ url_for('admin.delete_course', course_id=c.id) }}" class="d-inline"
+                    onsubmit="return confirmAction('Deactivate {{ c.course_code }}?')">
+                <button type="submit" class="btn btn-outline-danger btn-sm" title="Deactivate"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;color:var(--n500);padding:2rem;">No courses found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Course Modal -->
+<div class="modal-overlay" id="addCourseModal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="bi bi-plus-circle"></i> Add New Course</div>
+    <form method="POST" action="{{ url_for('admin.add_course') }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">Course Code <span class="req">*</span></label>
+          <input type="text" name="course_code" class="form-control text-uppercase" placeholder="e.g. CSC101" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credit Units <span class="req">*</span></label>
+          <input type="number" name="credit_unit" class="form-control" min="1" max="6" value="3" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Course Title <span class="req">*</span></label>
+        <input type="text" name="course_title" class="form-control" placeholder="e.g. Introduction to..." required>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">Level <span class="req">*</span></label>
+          <select name="level" class="form-select" required>
+            {% for l in ['100','200','300','400'] %}<option value="{{ l }}">{{ l }} Level</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="req">*</span></label>
+          <select name="semester" class="form-select" required>
+            <option value="First">First Semester</option>
+            <option value="Second">Second Semester</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assign Lecturer</label>
+        <select name="lecturer_id" class="form-select">
+          <option value="">— Unassigned —</option>
+          {% for l in lecturers %}<option value="{{ l.id }}">{{ l.full_name }} ({{ l.staff_id }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addCourseModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Course</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Course Modal -->
+<div class="modal-overlay" id="editCourseModal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="bi bi-pencil"></i> Edit Course</div>
+    <form method="POST" id="editCourseForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">Course Code <span class="req">*</span></label>
+          <input type="text" name="course_code" id="edit_code" class="form-control text-uppercase" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credit Units <span class="req">*</span></label>
+          <input type="number" name="credit_unit" id="edit_units" class="form-control" min="1" max="6" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Course Title <span class="req">*</span></label>
+        <input type="text" name="course_title" id="edit_title" class="form-control" required>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">Level <span class="req">*</span></label>
+          <select name="level" id="edit_level" class="form-select">
+            {% for l in ['100','200','300','400'] %}<option value="{{ l }}">{{ l }} Level</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="req">*</span></label>
+          <select name="semester" id="edit_semester" class="form-select">
+            <option value="First">First Semester</option>
+            <option value="Second">Second Semester</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assign Lecturer</label>
+        <select name="lecturer_id" id="edit_lecturer" class="form-select">
+          <option value="">— Unassigned —</option>
+          {% for l in lecturers %}<option value="{{ l.id }}">{{ l.full_name }} ({{ l.staff_id }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('editCourseModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-gold"><i class="bi bi-save"></i> Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterLevel(level, el) {
+  document.querySelectorAll('.level-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#coursesTable tbody tr[data-level]').forEach(row => {
+    row.style.display = (level === 'all' || row.dataset.level === level) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

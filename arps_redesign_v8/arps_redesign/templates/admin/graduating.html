@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Graduating Students — {{ current_year }}{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link active"><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-header-icon" style="background:var(--g100);border-color:var(--g200);">
+      <i class="bi bi-mortarboard" style="color:var(--g700);"></i>
+    </div>
+    <div>
+      <h4 class="page-title">Graduating Students — {{ current_year }}</h4>
+      <p class="page-subtitle">Students who have met all requirements and are eligible to graduate</p>
+    </div>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    {% if graduating %}
+    <a href="{{ url_for('admin.download_graduating_list') }}" class="btn btn-secondary btn-sm">
+      <i class="bi bi-filetype-csv"></i> Download CSV
+    </a>
+    <a href="{{ url_for('admin.download_graduating_pdf') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-file-earmark-pdf"></i> Download PDF
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Eligibility criteria -->
+<div class="alert alert-info mb-4">
+  <i class="bi bi-info-circle-fill"></i>
+  <div>
+    <strong>Graduation Eligibility Criteria:</strong> A student appears on this list only when they
+    (1) are within their 4-year programme duration, 
+    (2) have <strong>no failed courses</strong> (no grade F or E in any semester),
+    (3) have result records in the system, and 
+    (4) have not been formally marked as Spillover.
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+  <div class="stat-card accent-green">
+    <div class="stat-header">
+      <div class="stat-label">Eligible to Graduate</div>
+      <div class="stat-icon si-green"><i class="bi bi-mortarboard-fill"></i></div>
+    </div>
+    <div class="stat-value">{{ graduating|length }}</div>
+    <div class="stat-sub">{{ current_year }} cohort</div>
+  </div>
+  {% set first_class  = graduating|selectattr('cgpa','ge',4.5)|list %}
+  {% set second_upper = graduating|selectattr('cgpa','ge',3.5)|selectattr('cgpa','lt',4.5)|list %}
+  {% set second_lower = graduating|selectattr('cgpa','ge',2.4)|selectattr('cgpa','lt',3.5)|list %}
+  {% set others       = graduating|selectattr('cgpa','lt',2.4)|list %}
+  <div class="stat-card accent-amber">
+    <div class="stat-header">
+      <div class="stat-label">First Class</div>
+      <div class="stat-icon si-amber"><i class="bi bi-star-fill"></i></div>
+    </div>
+    <div class="stat-value">{{ first_class|length }}</div>
+    <div class="stat-sub">CGPA ≥ 4.50</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-header">
+      <div class="stat-label">Second Class Upper</div>
+      <div class="stat-icon si-blue"><i class="bi bi-award"></i></div>
+    </div>
+    <div class="stat-value">{{ second_upper|length }}</div>
+    <div class="stat-sub">CGPA 3.50–4.49</div>
+  </div>
+  <div class="stat-card accent-navy">
+    <div class="stat-header">
+      <div class="stat-label">2nd Lower & Below</div>
+      <div class="stat-icon si-navy"><i class="bi bi-patch-check"></i></div>
+    </div>
+    <div class="stat-value">{{ (second_lower|length) + (others|length) }}</div>
+    <div class="stat-sub">CGPA below 3.50</div>
+  </div>
+</div>
+
+<!-- Search + table -->
+{% if graduating %}
+<div class="card" style="margin-top:1.25rem;">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-list-ol me-2"></i>Graduating Class of {{ current_year }}</span>
+    <div class="d-flex gap-2">
+      <input type="text" id="globalSearch" class="form-control form-control-sm"
+             placeholder="Search name or matric no…"
+             style="width:200px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;">
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th style="width:40px;">S/N</th>
+          <th>Matric Number</th>
+          <th>Full Name</th>
+          <th>Level</th>
+          <th>Entry Year</th>
+          <th style="text-align:center;">CGPA</th>
+          <th>Degree Classification</th>
+          <th style="text-align:center;">Credit Units</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in graduating %}
+        {% set s = g.student %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.75rem;">{{ loop.index }}</td>
+          <td><strong style="font-family:var(--font-mono);font-size:.8rem;">{{ s.matric_no }}</strong></td>
+          <td>
+            <div style="font-weight:600;color:var(--g800);">{{ s.full_name }}</div>
+            {% if s.email %}<div style="font-size:.72rem;color:var(--n500);">{{ s.email }}</div>{% endif %}
+          </td>
+          <td><span class="badge badge-green">{{ s.level }} Level</span></td>
+          <td style="color:var(--n500);font-size:.8rem;">{{ s.entry_year }}</td>
+          <td style="text-align:center;">
+            {% if g.cgpa >= 4.5 %}
+              <span style="font-family:var(--font-mono);font-weight:700;font-size:.92rem;color:#14532D;">{{ "%.2f"|format(g.cgpa) }}</span>
+            {% elif g.cgpa >= 3.5 %}
+              <span style="font-family:var(--font-mono);font-weight:700;font-size:.92rem;color:#1E40AF;">{{ "%.2f"|format(g.cgpa) }}</span>
+            {% elif g.cgpa >= 2.4 %}
+              <span style="font-family:var(--font-mono);font-weight:700;font-size:.92rem;color:#92400E;">{{ "%.2f"|format(g.cgpa) }}</span>
+            {% else %}
+              <span style="font-family:var(--font-mono);font-weight:700;font-size:.92rem;color:var(--n500);">{{ "%.2f"|format(g.cgpa) }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if g.cgpa >= 4.5 %}
+              <span class="badge" style="background:#DCFCE7;color:#14532D;">
+                <i class="bi bi-star-fill"></i> First Class Honours
+              </span>
+            {% elif g.cgpa >= 3.5 %}
+              <span class="badge badge-info">2nd Class Upper</span>
+            {% elif g.cgpa >= 2.4 %}
+              <span class="badge badge-warning">2nd Class Lower</span>
+            {% elif g.cgpa >= 1.5 %}
+              <span class="badge badge-neutral">Third Class</span>
+            {% else %}
+              <span class="badge badge-neutral">Pass</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-weight:600;">{{ g.total_units }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('admin.view_transcript', student_id=s.id) }}"
+                 class="btn btn-secondary btn-sm" title="View Transcript">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{{ url_for('admin.download_transcript', student_id=s.id) }}"
+                 class="btn btn-primary btn-sm" title="Download PDF Transcript">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    <span><strong>{{ graduating|length }}</strong> student(s) eligible for graduation in {{ current_year }}.</span>
+    <a href="{{ url_for('admin.spillover') }}" style="margin-left:1rem;font-size:.77rem;color:var(--g700);">
+      <i class="bi bi-hourglass-split"></i> View Spillover Students →
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-top:1.25rem;">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="bi bi-mortarboard"></i>
+      <h5 style="font-family:var(--font-serif);color:var(--g800);margin-bottom:.4rem;">No graduating students found</h5>
+      <p>
+        No students currently meet all graduation criteria for {{ current_year }}.
+        This could mean results haven't been entered yet, or students have outstanding failed courses.
+      </p>
+      <div class="d-flex gap-2" style="justify-content:center;margin-top:1rem;">
+        <a href="{{ url_for('admin.compute') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-cpu"></i> Run Computation Engine
+        </a>
+        <a href="{{ url_for('admin.spillover') }}" class="btn btn-secondary btn-sm">
+          <i class="bi bi-hourglass-split"></i> Check Spillover List
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

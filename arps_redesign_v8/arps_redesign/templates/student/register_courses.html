@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Register Courses{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Student Portal</div>
+<a href="{{ url_for('student.dashboard') }}"        class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="{{ url_for('student.results') }}"          class="sidebar-link "><i class="bi bi-bar-chart-line"></i> Academic Records</a>
+<a href="{{ url_for('student.my_courses') }}"       class="sidebar-link "><i class="bi bi-book"></i> My Courses</a>
+<a href="{{ url_for('student.register_courses') }}" class="sidebar-link active"><i class="bi bi-pencil-square"></i> Register Courses</a>
+<a href="{{ url_for('student.statement') }}"        class="sidebar-link "><i class="bi bi-file-earmark-text"></i> Statement of Results</a>
+<a href="{{ url_for('student.predict_cgpa') }}"     class="sidebar-link "><i class="bi bi-graph-up-arrow"></i> CGPA Predictor</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('student.update_profile') }}"   class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('student.change_password') }}"  class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-pencil-square"></i></div>
+      <div>
+        <h4 class="page-title">Course Registration</h4>
+        <p class="page-subtitle">{{ session_year }} — {{ semester }} Semester &mdash; {{ student.level }} Level</p>
+      </div>
+    </div>
+  </div>
+
+<!-- Unit load tracker card -->
+<div class="card mb-4" style="border-top:3px solid var(--g300);">
+  <div class="card-body" style="padding:1rem 1.25rem;">
+    <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;margin-bottom:.75rem;">
+      <div>
+        <div style="font-size:.7rem;color:var(--n500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Already Registered</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--g700);">{{ current_units }} <span style="font-size:.8rem;font-weight:500;color:var(--n500)">units</span></div>
+      </div>
+      <div>
+        <div style="font-size:.7rem;color:var(--n500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Selecting</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--g300);" id="newUnitsVal">+0 <span style="font-size:.8rem;font-weight:500;color:var(--n500)">units</span></div>
+      </div>
+      <div>
+        <div style="font-size:.7rem;color:var(--n500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">NUC Limit</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--g700);">{{ min_units }}–{{ max_units }} <span style="font-size:.8rem;font-weight:500;color:var(--n500)">units</span></div>
+      </div>
+      <div style="margin-left:auto;">
+        <div style="font-size:.7rem;color:var(--n500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Total After Selection</div>
+        <div style="font-size:1.4rem;font-weight:700;" id="totalUnitsVal" style="color:var(--g700);">{{ current_units }} <span style="font-size:.8rem;font-weight:500;color:var(--n500)">units</span></div>
+      </div>
+    </div>
+    <div class="unit-bar-track">
+      <div class="unit-bar-fill" id="unitBar" style="width:{{ [current_units/max_units*100,0]|max|int }}%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:.3rem;">
+      <span style="font-size:.7rem;color:var(--n500);">0</span>
+      <span style="font-size:.7rem;color:var(--warning);font-weight:600;">Min: {{ min_units }}</span>
+      <span style="font-size:.7rem;color:var(--danger);font-weight:600;">Max: {{ max_units }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Warning area -->
+<div id="unitWarning" class="alert alert-danger mb-3 d-none">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <span id="warningText"></span>
+</div>
+
+{% if available_courses %}
+<form method="POST" id="regForm" action="{{ url_for('student.register_courses') }}">
+  <div class="card mb-4">
+    <div class="card-header ch-primary" style="justify-content:space-between;">
+      <span><i class="bi bi-list-check me-2"></i>Available Courses — {{ student.level }} Level, {{ semester }} Semester</span>
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <label style="display:flex;align-items:center;gap:.4rem;color:rgba(255,255,255,.7);font-size:.78rem;cursor:pointer;">
+          <input type="checkbox" id="selectAll" style="accent-color:var(--g300);width:14px;height:14px;">
+          Select all available
+        </label>
+        <span class="badge badge-gold">{{ available_courses|length }} courses</span>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th style="width:44px;text-align:center;">Select</th>
+            <th>Code</th><th>Course Title</th>
+            <th style="text-align:center">Units</th>
+            <th>Assigned Lecturer</th>
+            <th style="text-align:center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in available_courses %}
+          {% set already = c.id in registered_ids %}
+          <tr style="{{ 'background:var(--success-bg);' if already else '' }}">
+            <td style="text-align:center;">
+              {% if already %}
+              <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:1.1rem;" title="Already registered"></i>
+              {% else %}
+              <input type="checkbox" class="course-cb" name="course_ids" value="{{ c.id }}"
+                     data-units="{{ c.credit_unit }}" id="cb_{{ c.id }}"
+                     style="accent-color:var(--g700);width:15px;height:15px;">
+              {% endif %}
+            </td>
+            <td><label for="cb_{{ c.id }}" style="font-weight:700;cursor:pointer;color:var(--g700);">{{ c.course_code }}</label></td>
+            <td><label for="cb_{{ c.id }}" style="cursor:pointer;">{{ c.course_title }}</label></td>
+            <td style="text-align:center;">
+              <span class="badge badge-navy">{{ c.credit_unit }}</span>
+            </td>
+            <td style="font-size:.8rem;color:var(--n500);">{{ c.lecturer.full_name if c.lecturer else '—' }}</td>
+            <td style="text-align:center;">
+              {% if already %}
+              <span class="badge badge-success"><i class="bi bi-check me-1"></i>Registered</span>
+              {% else %}
+              <span class="badge badge-neutral">Available</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:.75rem;">
+    <a href="{{ url_for('student.my_courses') }}" class="btn btn-outline">
+      <i class="bi bi-x-circle"></i> Cancel
+    </a>
+    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+      <i class="bi bi-check-circle"></i> Confirm Registration
+    </button>
+  </div>
+</form>
+{% else %}
+<div style="text-align:center;padding:3rem 2rem;">
+  <i class="bi bi-book" style="font-size:2.5rem;color:var(--n400);display:block;margin-bottom:1rem;"></i>
+  <h5 style="color:var(--g700);font-family:'Playfair Display',serif;">No Courses Available</h5>
+  <p style="color:var(--n500);font-size:.83rem;max-width:400px;margin:0 auto .75rem;">
+    No active courses found for <strong>{{ student.level }} Level, {{ semester }} Semester</strong>.
+    Contact the Examination Officer if you believe this is incorrect.
+  </p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const MAX = {{ max_units }}, MIN = {{ min_units }}, TAKEN = {{ current_units }};
+
+function refresh() {
+  const cbs = document.querySelectorAll('.course-cb:checked');
+  const newU = Array.from(cbs).reduce((s,cb) => s + parseInt(cb.dataset.units), 0);
+  const total = TAKEN + newU;
+
+  document.getElementById('newUnitsVal').textContent = '+' + newU + ' \u200bunits';
+  const tv = document.getElementById('totalUnitsVal');
+  tv.textContent = total + ' \u200bunits';
+  tv.style.color = total > MAX ? 'var(--danger)' : total >= MIN ? 'var(--success)' : 'var(--warning)';
+
+  const pct = Math.min(total / MAX * 100, 100);
+  const bar = document.getElementById('unitBar');
+  bar.style.width = pct + '%';
+  bar.className = 'unit-bar-fill ' + (total > MAX ? 'over' : total >= MIN ? 'good' : '');
+
+  const warn = document.getElementById('unitWarning');
+  const warnTxt = document.getElementById('warningText');
+  const btn = document.getElementById('submitBtn');
+
+  if (newU === 0) { warn.classList.add('d-none'); btn.disabled = true; return; }
+
+  if (total > MAX) {
+    warnTxt.textContent = `Total (${total}) exceeds the NUC maximum of ${MAX} units. Deselect some courses.`;
+    warn.classList.remove('d-none'); warn.className = 'alert alert-danger mb-3';
+    btn.disabled = true;
+  } else {
+    if (total < MIN) {
+      warnTxt.textContent = `You have ${total} unit(s) — below the NUC minimum of ${MIN}. You may still proceed.`;
+      warn.classList.remove('d-none'); warn.className = 'alert alert-warning mb-3';
+    } else {
+      warn.classList.add('d-none');
+    }
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('selectAll')?.addEventListener('change', function() {
+  document.querySelectorAll('.course-cb').forEach(cb => cb.checked = this.checked);
+  refresh();
+});
+document.querySelectorAll('.course-cb').forEach(cb => cb.addEventListener('change', refresh));
+
+document.getElementById('regForm')?.addEventListener('submit', function(e) {
+  const n = document.querySelectorAll('.course-cb:checked').length;
+  if (!confirm(`Register ${n} new course(s) for {{ session_year }} {{ semester }} Semester?`)) e.preventDefault();
+});
+</script>
+{% endblock %}

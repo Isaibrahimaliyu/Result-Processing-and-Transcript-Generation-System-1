@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Course Registrations{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link active"><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-journal-plus"></i></div>
+      <div>
+        <h4 class="page-title">Course Registrations</h4>
+        <p class="page-subtitle">View all student course registrations per session</p>
+      </div>
+    </div>
+    <button onclick="openModal('registerModal')" class="btn btn-gold btn-sm no-print">
+      <i class="bi bi-plus-lg"></i> Add Registration
+    </button>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4 no-print">
+  <div class="card-body" style="padding:.75rem 1.1rem;">
+    <form method="GET" style="display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap;">
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Session Year</label>
+        <input type="text" name="session" class="form-control" style="width:130px;" value="{{ session_year }}">
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Semester</label>
+        <select name="semester" class="form-select" style="width:150px;">
+          <option value="First"  {% if semester=='First'  %}selected{% endif %}>First</option>
+          <option value="Second" {% if semester=='Second' %}selected{% endif %}>Second</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Level</label>
+        <select name="level" class="form-select" style="width:130px;">
+          <option value="">All Levels</option>
+          {% for l in ['100','200','300','400'] %}
+          <option value="{{ l }}" {% if level==l %}selected{% endif %}>{{ l }} Level</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-filter"></i> Filter</button>
+      <div style="margin-left:auto;">
+        <label class="form-label" style="margin-bottom:.25rem;">&nbsp;</label>
+        <input type="text" id="globalSearch" class="form-control" style="width:200px;" placeholder="🔍 Search...">
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header ch-primary">
+    <span>{{ session_year }} — {{ semester }} Semester{% if level %}, {{ level }} Level{% endif %}</span>
+    <span class="badge badge-gold">{{ pagination.total }} registration(s)</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>#</th><th>Matric No</th><th>Student Name</th><th>Course Code</th><th>Course Title</th><th style="text-align:center">Units</th><th>Registered</th><th class="no-print">Action</th></tr>
+      </thead>
+      <tbody>
+        {% for r in registrations %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.77rem;">{{ ((pagination.page - 1) * pagination.per_page) + loop.index }}</td>
+          <td><strong>{{ r.student.matric_no }}</strong></td>
+          <td>{{ r.student.full_name }}</td>
+          <td><strong>{{ r.course.course_code }}</strong></td>
+          <td>{{ r.course.course_title }}</td>
+          <td style="text-align:center;"><span class="badge badge-navy">{{ r.course.credit_unit }}</span></td>
+          <td style="font-size:.77rem;color:var(--n500);">{{ r.registered_at.strftime('%d/%m/%Y') }}</td>
+          <td class="no-print">
+            <form method="POST" action="{{ url_for('admin.delete_registration', reg_id=r.id) }}"
+                  onsubmit="return confirmAction('Remove this registration?')">
+              <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;color:var(--n500);padding:2rem;">No registrations found for this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with endpoint='admin.registrations', extra_args={'session': session_year, 'semester': semester, 'level': level} %}
+    {% include "_pagination.html" %}
+  {% endwith %}
+</div>
+
+<!-- Add Registration Modal -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-title"><i class="bi bi-journal-plus"></i> Register Student to Course</div>
+    <form method="POST" action="{{ url_for('admin.add_registration') }}">
+      <div class="form-group">
+        <label class="form-label">Student <span class="req">*</span></label>
+        <select name="student_id" class="form-select" required>
+          <option value="">— Select Student —</option>
+          {% for s in all_students %}
+          <option value="{{ s.id }}">{{ s.matric_no }} — {{ s.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Course <span class="req">*</span></label>
+        <select name="course_id" class="form-select" required>
+          <option value="">— Select Course —</option>
+          {% for c in all_courses %}
+          <option value="{{ c.id }}">{{ c.course_code }} — {{ c.course_title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">Session Year <span class="req">*</span></label>
+          <input type="text" name="session_year" class="form-control" value="{{ session_year }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="req">*</span></label>
+          <select name="semester" class="form-select" required>
+            <option value="First" {% if semester=='First' %}selected{% endif %}>First</option>
+            <option value="Second" {% if semester=='Second' %}selected{% endif %}>Second</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('registerModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Register</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

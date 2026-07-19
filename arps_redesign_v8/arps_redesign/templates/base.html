@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ARPTGS{% endblock %} | IBB University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/arps.css') }}" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+  <script>
+    /* Apply saved theme before paint to prevent flash */
+    (function(){
+      var t = localStorage.getItem('arps-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+
+<!-- ── TOPBAR ──────────────────────────────────────────────── -->
+<header class="topbar">
+  <!-- Brand -->
+  <a href="{{ url_for('auth.login') }}" class="topbar-brand">
+    <div class="topbar-logo">
+      <img src="{{ url_for('static', filename='img/ibbul_logo.png') }}" alt="IBB University">
+    </div>
+    <div class="topbar-wordmark">
+      <strong>ARPTGS</strong>
+      <small>Result &amp; Transcript System</small>
+    </div>
+  </a>
+
+  <div class="topbar-sep"></div>
+
+  <!-- Institution -->
+  <div class="topbar-institution">
+    <div class="topbar-dept-logo">
+      <img src="{{ url_for('static', filename='img/nacos_logo.png') }}" alt="CS Dept">
+    </div>
+    <div class="topbar-inst-text">
+      <strong>Ibrahim Badamasi Babangida University</strong>
+      <span>Department of Computer Science, Lapai</span>
+    </div>
+  </div>
+
+  <div class="topbar-flex"></div>
+
+  <!-- Session pill -->
+  {% if active_session is defined and active_session %}
+  <div class="session-pill">
+    <span class="dot"></span>
+    <span>{{ active_session.session_year }} — {{ active_session.semester }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Dark mode toggle -->
+  <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark/light mode">
+    <i class="bi bi-moon-fill" id="darkIcon"></i>
+  </button>
+
+  <!-- User block -->
+  <div class="topbar-user">
+    <div class="user-avatar">{{ current_user.username[0]|upper }}</div>
+    <div class="user-meta">
+      <strong>{{ current_user.username }}</strong>
+      <span class="role-pill">
+        {% if current_user.role == 'admin' %}Exam Officer
+        {% else %}{{ current_user.role|title }}{% endif %}
+      </span>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Sign out">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+</header>
+
+<!-- ── FLASH TOASTS ─────────────────────────────────────────── -->
+<div id="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="flash-toast toast-{{ category }}">
+      {% if category == 'success' %}<i class="bi bi-check-circle-fill toast-icon" style="color:var(--success)"></i>
+      {% elif category == 'danger'  %}<i class="bi bi-x-circle-fill toast-icon" style="color:var(--danger)"></i>
+      {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle-fill toast-icon" style="color:var(--warning)"></i>
+      {% else %}<i class="bi bi-info-circle-fill toast-icon" style="color:var(--info)"></i>{% endif %}
+      <span>{{ message }}</span>
+      <button class="toast-close" aria-label="Dismiss"><i class="bi bi-x"></i></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<!-- ── LAYOUT ───────────────────────────────────────────────── -->
+<div class="portal-layout">
+  <nav class="sidebar" role="navigation" aria-label="Main navigation">
+    {% block sidebar %}{% endblock %}
+    <div class="sidebar-footer">ARPTGS v3.0 &mdash; IBB University &copy; 2026</div>
+  </nav>
+  <main class="main-content" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/arps.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

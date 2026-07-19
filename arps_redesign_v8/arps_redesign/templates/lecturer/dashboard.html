@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Lecturer Dashboard{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Lecturer Portal</div>
+<a href="{{ url_for('lecturer.dashboard') }}"         class="sidebar-link active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Teaching</div>
+<a href="{{ url_for('lecturer.dashboard') }}"     class="sidebar-link "><i class="bi bi-table"></i> Course Scores</a>
+<a href="{{ url_for('lecturer.dashboard') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Bulk Upload</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('lecturer.lecturer_profile') }}"  class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('lecturer.lecturer_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-person-video2"></i></div>
+      <div>
+        <h4 class="page-title">Lecturer Dashboard</h4>
+        <p class="page-subtitle">{{ lecturer.full_name }} &mdash; {{ lecturer.staff_id }} &mdash; {{ lecturer.department }}</p>
+      </div>
+    </div>
+  </div>
+
+<div class="grid-3 mb-4">
+  <div class="stat-card accent-gold">
+    <div class="stat-icon si-amber"><i class="bi bi-book"></i></div>
+    <div class="stat-value">{{ courses|length }}</div>
+    <div class="stat-label">Assigned Courses</div>
+  </div>
+  <div class="stat-card accent-navy">
+    <div class="stat-icon si-navy"><i class="bi bi-clipboard-check"></i></div>
+    <div class="stat-value">
+      {% set n = namespace(t=0) %}{% for c in courses %}{% set n.t = n.t + c.scores|length %}{% endfor %}{{ n.t }}
+    </div>
+    <div class="stat-label">Total Scores Entered</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-icon si-blue"><i class="bi bi-upload"></i></div>
+    <div class="stat-value"><i class="bi bi-file-earmark-spreadsheet" style="font-size:1.4rem;"></i></div>
+    <div class="stat-label">CSV Bulk Upload Available</div>
+  </div>
+</div>
+
+{% if courses %}
+<div class="card">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-book me-2"></i>Manage Assigned Courses</span>
+    <span class="badge badge-gold">{{ courses|length }} course(s)</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>Code</th><th>Course Title</th><th style="text-align:center">Units</th><th style="text-align:center">Level</th><th>Semester</th><th style="text-align:center">Scores Entered</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for c in courses %}
+        <tr>
+          <td><strong>{{ c.course_code }}</strong></td>
+          <td>{{ c.course_title }}</td>
+          <td style="text-align:center;"><span class="badge badge-navy">{{ c.credit_unit }}</span></td>
+          <td style="text-align:center;"><span class="badge badge-neutral">{{ c.level }}</span></td>
+          <td>{{ c.semester }}</td>
+          <td style="text-align:center;"><span class="badge badge-info">{{ c.scores|length }}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('lecturer.course_scores', course_id=c.id) }}" class="btn btn-outline btn-sm" title="Score Sheet"><i class="bi bi-list-ul"></i></a>
+              <a href="{{ url_for('lecturer.enter_score', course_id=c.id) }}"   class="btn btn-primary btn-sm"  title="Enter Score"><i class="bi bi-pencil-square"></i></a>
+              <a href="{{ url_for('lecturer.bulk_upload', course_id=c.id) }}"   class="btn btn-gold btn-sm"     title="CSV Upload"><i class="bi bi-upload"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle-fill"></i>
+  <div>No courses have been assigned to you yet. Contact the Examination Officer.</div>
+</div>
+{% endif %}
+{% endblock %}

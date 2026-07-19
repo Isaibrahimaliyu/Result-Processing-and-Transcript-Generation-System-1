@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-header-icon"><i class="bi bi-speedometer2"></i></div>
+    <div>
+      <h4 class="page-title">Dashboard</h4>
+      <p class="page-subtitle">Examination Officer — System Overview</p>
+    </div>
+  </div>
+  {% if active_session %}
+  <div class="session-pill" style="background:var(--g100);border-color:var(--g200);color:var(--g700);">
+    <span class="dot" style="background:var(--g500);box-shadow:0 0 0 2px rgba(46,125,58,.25);animation:pulse 2s infinite;"></span>
+    <span style="font-weight:600;">{{ active_session.session_year }}</span>
+    <span>&mdash;</span>
+    <span>{{ active_session.semester }} Semester</span>
+    {% if active_session.registration_open %}
+    <span class="badge badge-success" style="font-size:.6rem;">Reg. Open</span>
+    {% else %}
+    <span class="badge badge-neutral" style="font-size:.6rem;">Reg. Closed</span>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card accent-green">
+    <div class="stat-header">
+      <div class="stat-label">Students</div>
+      <div class="stat-icon si-green"><i class="bi bi-people-fill"></i></div>
+    </div>
+    <div class="stat-value">{{ total_students }}</div>
+    <div class="stat-sub">Registered in system</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-header">
+      <div class="stat-label">Lecturers</div>
+      <div class="stat-icon si-blue"><i class="bi bi-person-video2"></i></div>
+    </div>
+    <div class="stat-value">{{ total_lecturers }}</div>
+    <div class="stat-sub">Active faculty</div>
+  </div>
+  <div class="stat-card accent-amber">
+    <div class="stat-header">
+      <div class="stat-label">Courses</div>
+      <div class="stat-icon si-amber"><i class="bi bi-book-fill"></i></div>
+    </div>
+    <div class="stat-value">{{ total_courses }}</div>
+    <div class="stat-sub">Course directory</div>
+  </div>
+  <div class="stat-card accent-navy">
+    <div class="stat-header">
+      <div class="stat-label">Score Records</div>
+      <div class="stat-icon si-navy"><i class="bi bi-clipboard-data"></i></div>
+    </div>
+    <div class="stat-value">{{ total_scores }}</div>
+    <div class="stat-sub">Entries recorded</div>
+  </div>
+</div>
+
+<!-- Enrollment distribution chart -->
+<div class="grid-2-3 mb-4" style="gap:1.5rem;">
+  <div class="card">
+    <div class="card-header ch-primary"><i class="bi bi-bar-chart-fill me-2"></i>Enrollment by Level</div>
+    <div class="card-body" style="padding:1.25rem;">
+      <canvas id="levelChart" height="160"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header ch-primary"><i class="bi bi-pie-chart-fill me-2"></i>Publication Coverage</div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;padding:1.25rem;">
+      <canvas id="pubChart" height="160"></canvas>
+      <div style="display:flex;gap:1.2rem;margin-top:.75rem;font-size:.74rem;color:var(--n500);">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1F7A3C;margin-right:5px;"></span>Live</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#D97706;margin-right:5px;"></span>Hidden</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result publication status -->
+{% if publications %}
+<div class="card mb-4">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-megaphone me-2"></i>Result Publication Status</span>
+    <a href="{{ url_for('admin.publications') }}" style="font-size:.73rem;color:rgba(255,255,255,.55);">Manage →</a>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead><tr><th>Session</th><th>Semester</th><th>Level</th><th style="text-align:center">Status</th><th>Published</th></tr></thead>
+      <tbody>
+        {% for p in publications[:6] %}
+        <tr>
+          <td>{{ p.session_year }}</td>
+          <td>{{ p.semester }}</td>
+          <td><span class="badge badge-navy">{{ p.level }} Level</span></td>
+          <td style="text-align:center;">
+            {% if p.is_published %}
+            <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> LIVE</span>
+            {% else %}
+            <span class="badge badge-warning"><i class="bi bi-eye-slash-fill"></i> Hidden</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.77rem;color:var(--n500);">{{ p.published_at.strftime('%d/%m/%Y %H:%M') if p.published_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning mb-4">
+  <i class="bi bi-megaphone-fill"></i>
+  <div>
+    <strong>No results published yet.</strong> Students cannot see any results until you
+    <a href="{{ url_for('admin.publications') }}" style="font-weight:700;">create and publish result records</a>.
+  </div>
+</div>
+{% endif %}
+
+<!-- Core use cases -->
+<div class="grid-3 mb-4">
+  {% for href,icon,title,desc,col in [
+    (url_for('admin.publications'), 'bi-megaphone-fill',       'Publish Results',     'Release results to students per semester/level', '#C9922A'),
+    (url_for('admin.compute'),      'bi-cpu-fill',             'Computation Engine',  'Compute GPA/CGPA for all students',              '#059669'),
+    (url_for('admin.students'),     'bi-file-earmark-person',  'Generate Transcripts','View and download official student transcripts',  '#1D5FA8'),
+  ] %}
+  <a href="{{ href }}" style="text-decoration:none;">
+    <div class="card" style="padding:1.1rem;border-top:3px solid {{ col }};transition:transform .15s,box-shadow .15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--sh)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.4rem;">
+        <div style="width:34px;height:34px;border-radius:var(--r-sm);background:{{ col }}18;display:flex;align-items:center;justify-content:center;">
+          <i class="bi {{ icon }}" style="color:{{ col }};font-size:.95rem;"></i>
+        </div>
+        <span style="font-weight:700;font-size:.85rem;color:var(--g700);">{{ title }}</span>
+      </div>
+      <p style="font-size:.76rem;color:var(--n500);margin:0;">{{ desc }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Management shortcuts -->
+<div class="grid-2 mb-4">
+  {% for href,icon,title,desc,col in [
+    (url_for('admin.sessions'),      'bi-calendar3',     'Manage Academic Sessions',   'Set active session and control registration periods', '#6610f2'),
+    (url_for('admin.bulk_students'), 'bi-cloud-upload',  'Import Student Records',      'Bulk-register students via CSV file upload', '#8567DC'),
+  ] %}
+  <a href="{{ href }}" style="text-decoration:none;">
+    <div class="card" style="padding:1rem;display:flex;align-items:center;gap:.75rem;transition:transform .15s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+      <div style="width:36px;height:36px;background:{{ col }}12;border:1px solid {{ col }}30;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="bi {{ icon }}" style="color:{{ col }};"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.84rem;color:var(--g700);">{{ title }}</div>
+        <div style="font-size:.75rem;color:var(--n500);">{{ desc }}</div>
+      </div>
+      <i class="bi bi-chevron-right" style="color:var(--n400);margin-left:auto;"></i>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Recent audit log -->
+<div class="card">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-clock-history me-2"></i>Recent Activity</span>
+    <a href="{{ url_for('admin.audit_log') }}" style="font-size:.73rem;color:rgba(255,255,255,.55);">View all →</a>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for log in recent_logs %}
+        <tr>
+          <td style="font-size:.75rem;color:var(--n500);">{{ log.logged_at.strftime('%d/%m %H:%M') }}</td>
+          <td><strong style="font-size:.8rem;">{{ log.user.username if log.user else '—' }}</strong></td>
+          <td>
+            {% set bc = 'badge-success' if 'ADD' in log.action or 'ENTRY' in log.action or 'PUBLISHED' in log.action else ('badge-warning' if 'EDIT' in log.action or 'UPDATE' in log.action or 'UNPUBLISHED' in log.action else 'badge-info') %}
+            <span class="badge {{ bc }}">{{ log.action }}</span>
+          </td>
+          <td style="font-size:.77rem;color:var(--n500);">{{ (log.new_value or '')[:50] }}</td>
+          <td style="font-size:.74rem;color:var(--n400);">{{ log.ip_address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:var(--n500);padding:2rem;">No activity yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? 'rgba(255,255,255,.6)' : '#5B6B5D';
+
+  new Chart(document.getElementById('levelChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['100 Level','200 Level','300 Level','400 Level'],
+      datasets: [{
+        data: [
+          {{ level_counts.get('100', 0) }},
+          {{ level_counts.get('200', 0) }},
+          {{ level_counts.get('300', 0) }},
+          {{ level_counts.get('400', 0) }}
+        ],
+        backgroundColor: ['#5DC07A','#2EA652','#1F7A3C','#145228'],
+        borderRadius: 6,
+        maxBarThickness: 46,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
+        x: { grid: { display: false }, ticks: { color: textColor } }
+      }
+    }
+  });
+
+  {% set live_count = publications | selectattr('is_published', 'eq', true) | list | length %}
+  {% set hidden_count = publications | selectattr('is_published', 'eq', false) | list | length %}
+  new Chart(document.getElementById('pubChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Live', 'Hidden'],
+      datasets: [{
+        data: [{{ live_count }}, {{ hidden_count }}],
+        backgroundColor: ['#1F7A3C', '#D97706'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: { legend: { display: false } }
+    }
+  });
+})();
+</script>
+{% endblock %}

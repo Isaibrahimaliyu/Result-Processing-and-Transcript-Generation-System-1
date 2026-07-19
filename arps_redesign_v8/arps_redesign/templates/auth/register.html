@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <script>(function(){var t=localStorage.getItem('arps-theme')||'light';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | ARPTGS — IBB University</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/arps.css') }}" rel="stylesheet">
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="flash-container">
+    {% for cat, msg in messages %}
+    <div class="flash-toast toast-{{ cat }}">
+      <i class="bi bi-info-circle-fill toast-icon"></i>
+      <span>{{ msg }}</span>
+      <button class="toast-close"><i class="bi bi-x"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<div class="auth-wrap">
+
+  <!-- Left panel -->
+  <div class="auth-panel-left">
+    <div class="glow"></div>
+    <div style="position:absolute;width:380px;height:380px;border-radius:50%;border:1px solid rgba(255,255,255,.05);top:-120px;right:-120px;pointer-events:none;"></div>
+    <div style="position:absolute;width:240px;height:240px;border-radius:50%;border:1px solid rgba(93,192,122,.06);bottom:-70px;left:-60px;pointer-events:none;"></div>
+
+    <div class="auth-logo-row">
+      <div class="auth-logo-badge">
+        <img src="{{ url_for('static', filename='img/ibbul_logo.png') }}" alt="IBB University">
+      </div>
+      <div>
+        <div class="auth-uni-name">Ibrahim Badamasi<br>Babangida University</div>
+        <div class="auth-uni-sub">Lapai, Niger State</div>
+      </div>
+    </div>
+
+    <div style="position:relative;z-index:1;flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(93,192,122,.1);border:1px solid rgba(93,192,122,.18);border-radius:var(--r-full);padding:.25rem .8rem;font-size:.68rem;color:var(--g200);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:1rem;">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--g300);"></span>
+        New Account Registration
+      </div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.85rem;color:#fff;line-height:1.22;margin-bottom:.75rem;font-weight:800;">
+        Join the ARPTGS<br>Portal today.
+      </h2>
+      <p style="font-size:.8rem;color:rgba(255,255,255,.42);line-height:1.75;margin-bottom:1.5rem;">
+        All students, lecturers, and exam officers register using their institutional credentials. Your account is verified against the university records.
+      </p>
+      {% for icon, title, desc in [
+        ('bi-person-check-fill', 'Instant Access', 'Start viewing results and transcripts immediately after registration.'),
+        ('bi-lock-fill', 'Secure & Private', 'Your academic records are protected and only visible to you.'),
+        ('bi-bell-fill', 'Result Alerts', 'Get emailed the moment your results are published.'),
+      ] %}
+      <div class="auth-feature">
+        <div class="auth-feature-icon"><i class="bi {{ icon }}"></i></div>
+        <div class="auth-feature-text">
+          <strong>{{ title }}</strong>{{ desc }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="auth-copy">&copy; 2026 Ibrahim Badamasi Babangida University &mdash; All rights reserved</div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-panel-right">
+    <div class="auth-card" style="max-width:500px;">
+
+      <!-- Header row with dark toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);">
+        <div>
+          <h3 style="font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--tx-primary);font-weight:700;margin:0;">Create Account</h3>
+          <p style="font-size:.76rem;color:var(--tx-muted);margin-top:2px;">Register with your institutional credentials</p>
+        </div>
+        <button id="darkToggle" type="button"
+                style="width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx-muted);font-size:.95rem;transition:all var(--t);"
+                title="Toggle dark mode">
+          <i class="bi bi-moon-fill" id="darkIcon"></i>
+        </button>
+      </div>
+
+      <!-- Role selector -->
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:.75rem;font-weight:600;color:var(--tx-secondary);margin-bottom:.6rem;">I am registering as</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;">
+          {% for val, label, icon in [('student','Student','bi-mortarboard-fill'),('lecturer','Lecturer','bi-person-video2'),('admin','Exam Officer','bi-shield-lock-fill')] %}
+          <label style="cursor:pointer;">
+            <input type="radio" name="role" value="{{ val }}" id="role_{{ val }}"
+                   {% if val == 'student' %}checked{% endif %}
+                   onchange="togglePasskey()" style="display:none;">
+            <div id="card_{{ val }}"
+                 style="border:1.5px solid var(--border);border-radius:var(--r);padding:.65rem .5rem;text-align:center;transition:border-color .15s,background .15s;font-size:.76rem;font-weight:600;color:var(--tx-muted);"
+                 onclick="document.getElementById('role_{{ val }}').checked=true;togglePasskey();">
+              <i class="bi {{ icon }}" style="display:block;font-size:1.15rem;margin-bottom:.3rem;"></i>
+              {{ label }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+        <input type="hidden" name="role" id="role_value" value="student">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">First Name <span class="req">*</span></label>
+            <input type="text" name="first_name" class="form-control" required placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name <span class="req">*</span></label>
+            <input type="text" name="last_name" class="form-control" required placeholder="Last name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Middle Name <span style="font-weight:400;color:var(--tx-faint)">(optional)</span></label>
+          <input type="text" name="middle_name" class="form-control" placeholder="Middle name">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Username <span class="req">*</span></label>
+          <div class="input-group">
+            <span class="input-addon"><i class="bi bi-person-badge"></i></span>
+            <input type="text" name="username" class="form-control"
+                   placeholder="Matric No or Staff ID" required autocomplete="username">
+          </div>
+          <div class="form-hint">e.g. U22/FNS/CSC/001 &nbsp;·&nbsp; STAFF-001</div>
+        </div>
+
+        <!-- Student-only fields -->
+        <div id="student_fields">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <div class="form-group">
+              <label class="form-label">Level <span class="req">*</span></label>
+              <select name="level" class="form-select">
+                {% for l in ['100','200','300','400'] %}
+                <option value="{{ l }}">{{ l }} Level</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Entry Year</label>
+              <input type="number" name="entry_year" class="form-control"
+                     min="2000" max="2099" placeholder="e.g. 2022">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" name="date_of_birth" class="form-control">
+          </div>
+        </div>
+
+        <!-- Admin passkey -->
+        <div id="passkey_block" class="d-none">
+          <div style="background:var(--warning-bg);border:1.5px solid var(--warning-border);border-radius:var(--r-sm);padding:.75rem;margin-bottom:.9rem;font-size:.77rem;color:var(--warning);">
+            <i class="bi bi-shield-lock-fill me-1"></i>
+            <strong>Exam Officer registration</strong> requires the institutional passkey set in your <code>.env</code> file as <code>ADMIN_PASSKEY</code>.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Admin Passkey <span class="req">*</span></label>
+            <div class="input-group">
+              <span class="input-addon"><i class="bi bi-key"></i></span>
+              <input type="password" name="passkey" id="passkey" class="form-control" placeholder="Enter institutional passkey">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">Password <span class="req">*</span></label>
+            <div class="input-group">
+              <span class="input-addon"><i class="bi bi-lock"></i></span>
+              <input type="password" name="password" class="form-control" required minlength="6" placeholder="Min. 6 characters">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password <span class="req">*</span></label>
+            <div class="input-group">
+              <span class="input-addon"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" name="confirm_password" class="form-control" required placeholder="Repeat password">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:.25rem;border-radius:var(--r);">
+          <i class="bi bi-person-plus-fill"></i> Create Account
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.1rem;">
+        <span style="font-size:.78rem;color:var(--tx-muted);">Already have an account?</span>
+        <a href="{{ url_for('auth.login') }}" style="font-size:.78rem;font-weight:600;color:var(--g600);margin-left:.4rem;">
+          Sign in <i class="bi bi-arrow-right" style="font-size:.72rem;"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/arps.js') }}"></script>
+<script>
+function togglePasskey() {
+  var role   = document.querySelector('input[name="role"]:checked')?.value || 'student';
+  var block  = document.getElementById('passkey_block');
+  var pk     = document.getElementById('passkey');
+  var stuFld = document.getElementById('student_fields');
+  var rv     = document.getElementById('role_value');
+  if (rv) rv.value = role;
+  // Role cards highlight
+  ['student','lecturer','admin'].forEach(function(r) {
+    var card = document.getElementById('card_' + r);
+    if (!card) return;
+    if (r === role) {
+      card.style.borderColor = 'var(--g500)';
+      card.style.background  = 'var(--g50)';
+      card.style.color       = 'var(--g700)';
+    } else {
+      card.style.borderColor = 'var(--border)';
+      card.style.background  = '';
+      card.style.color       = 'var(--tx-muted)';
+    }
+  });
+  if (block) {
+    if (role === 'admin') { block.classList.remove('d-none'); if (pk) pk.required = true; }
+    else                  { block.classList.add('d-none');    if (pk) pk.required = false; }
+  }
+  if (stuFld) stuFld.style.display = (role === 'student') ? 'block' : 'none';
+}
+// Init dark icon
+(function(){
+  var t = localStorage.getItem('arps-theme') || 'light';
+  var icon = document.getElementById('darkIcon');
+  if (icon) icon.className = t === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+  togglePasskey();
+})();
+</script>
+</body>
+</html>

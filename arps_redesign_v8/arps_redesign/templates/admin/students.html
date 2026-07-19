@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Students{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link active"><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-people"></i></div>
+      <div>
+        <h4 class="page-title">Student Registry</h4>
+        <p class="page-subtitle">{{ pagination.total }} registered student(s){% if search %} — results for "{{ search }}"{% endif %}</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 no-print">
+      <a href="{{ url_for('admin.bulk_students') }}" class="btn btn-gold btn-sm"><i class="bi bi-upload"></i> Bulk Import</a>
+      <form method="GET" action="{{ url_for('admin.students') }}" class="d-flex gap-1">
+        <input type="hidden" name="level" value="{{ level_filter }}">
+        <input type="text" name="q" value="{{ search }}" class="form-control" style="width:220px;" placeholder="🔍 Search name or matric no...">
+        <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-search"></i></button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Level filter tabs (server-side filter — preserves search term) -->
+<div class="portal-tabs no-print">
+  <a href="{{ url_for('admin.students', q=search) }}" class="portal-tab {{ 'active' if not level_filter }}">All Levels</a>
+  {% for l in ['100','200','300','400'] %}
+  <a href="{{ url_for('admin.students', level=l, q=search) }}" class="portal-tab {{ 'active' if level_filter == l }}">{{ l }} Level</a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="portal-table" id="studentsTable">
+      <thead>
+        <tr><th>#</th><th>Matric No</th><th>Full Name</th><th>Level</th><th>Department</th><th style="text-align:center">Status</th><th class="no-print">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr class="searchable-row" data-level="{{ s.level }}">
+          <td style="color:var(--n400);font-size:.77rem;">{{ ((pagination.page - 1) * pagination.per_page) + loop.index }}</td>
+          <td><strong>{{ s.matric_no }}</strong></td>
+          <td>{{ s.full_name }}</td>
+          <td><span class="badge badge-navy">{{ s.level }}</span></td>
+          <td style="font-size:.8rem;">{{ s.department }}</td>
+          <td style="text-align:center;">
+            {% if s.email %}
+              <span class="badge badge-success" title="{{ s.email }}"><i class="bi bi-envelope-check-fill"></i></span>
+            {% else %}
+              <span class="badge badge-neutral"><i class="bi bi-envelope-x"></i> None</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if s.user.is_active %}
+            <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Active</span>
+            {% else %}
+            <span class="badge badge-neutral"><i class="bi bi-slash-circle"></i> Inactive</span>
+            {% endif %}
+          </td>
+          <td class="no-print">
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('admin.view_transcript', student_id=s.id) }}" class="btn btn-outline btn-sm" title="View Transcript"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('admin.download_transcript', student_id=s.id) }}" class="btn btn-success btn-sm" title="PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+              <button class="btn btn-primary btn-sm" title="Edit Student Profile"
+                      onclick="openEditStudentModal(
+                        {{ s.id }},'{{ s.matric_no }}',
+                        '{{ s.first_name }}','{{ s.last_name }}',
+                        '{{ s.middle_name or '' }}',
+                        '{{ s.level }}','{{ s.entry_year or '' }}',
+                        '{{ s.date_of_birth.isoformat() if s.date_of_birth else '' }}',
+                        '{{ s.email or '' }}','{{ s.department }}')">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" title="Update Email"
+                      onclick="openEmailModal({{ s.id }},'{{ s.matric_no }}','{{ s.email or '' }}')">
+                <i class="bi bi-envelope"></i>
+              </button>
+              <form method="POST" action="{{ url_for('admin.toggle_student', student_id=s.id) }}" class="d-inline"
+                    onsubmit="return confirmAction('{{ 'Deactivate' if s.user.is_active else 'Activate' }} {{ s.matric_no }}?')">
+                <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if s.user.is_active else 'btn-outline' }}" title="{{ 'Deactivate' if s.user.is_active else 'Activate' }}">
+                  <i class="bi bi-{{ 'slash-circle' if s.user.is_active else 'check-circle' }}"></i>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reset_student_password', student_id=s.id) }}" class="d-inline"
+                    onsubmit="return confirmAction('Reset password for {{ s.matric_no }} to default (arps1234)?')">
+                <button type="submit" class="btn btn-outline btn-sm" title="Reset Password"><i class="bi bi-key"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--n500);padding:2.5rem;">No students found. <a href="{{ url_for('admin.bulk_students') }}">Import via CSV</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with endpoint='admin.students', extra_args={'level': level_filter, 'q': search} %}
+    {% include "_pagination.html" %}
+  {% endwith %}
+</div>
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="editStudentModal">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-title"><i class="bi bi-pencil-square"></i> Edit Student Profile</div>
+    <p style="font-size:.8rem;color:var(--n500);margin-bottom:1rem;">
+      Update <strong id="editStudentMatric"></strong> — changes are saved immediately.
+    </p>
+    <form method="POST" id="editStudentForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div class="form-group">
+          <label class="form-label">First Name <span class="req">*</span></label>
+          <input type="text" name="first_name" id="es_first" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name <span class="req">*</span></label>
+          <input type="text" name="last_name" id="es_last" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Middle Name <span style="font-weight:400;color:var(--n500)">(optional)</span></label>
+          <input type="text" name="middle_name" id="es_middle" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <input type="text" name="department" id="es_dept" class="form-control"
+                 value="Computer Science">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Level <span class="req">*</span></label>
+          <select name="level" id="es_level" class="form-select" required>
+            {% for l in ['100','200','300','400'] %}
+            <option value="{{ l }}">{{ l }} Level</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entry Year <span class="req">*</span></label>
+          <input type="number" name="entry_year" id="es_year" class="form-control"
+                 min="2000" max="2099" placeholder="e.g. 2022">
+          <p style="font-size:.72rem;color:var(--n500);margin-top:.25rem;">Year admitted to the university</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" name="date_of_birth" id="es_dob" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" id="es_email" class="form-control"
+                 placeholder="student@gmail.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('editStudentModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Email Modal -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-title"><i class="bi bi-envelope"></i> Update Student Email</div>
+    <p style="font-size:.82rem;color:var(--n500);margin-bottom:1rem;">
+      Set or update the email address for <strong id="emailModalName"></strong>.
+      Notification emails will be sent to this address when results are published.
+    </p>
+    <form method="POST" id="emailModalForm">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <div class="input-group">
+          <span class="input-addon"><i class="bi bi-envelope"></i></span>
+          <input type="email" name="email" id="emailInput" class="form-control"
+                 placeholder="student@gmail.com">
+        </div>
+        <p style="font-size:.72rem;color:var(--n500);margin-top:.3rem;">
+          Leave blank to remove the email address.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('emailModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Email</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

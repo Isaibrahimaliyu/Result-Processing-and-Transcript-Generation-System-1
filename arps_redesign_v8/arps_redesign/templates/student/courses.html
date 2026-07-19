@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}My Courses{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Student Portal</div>
+<a href="{{ url_for('student.dashboard') }}"        class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="{{ url_for('student.results') }}"          class="sidebar-link "><i class="bi bi-bar-chart-line"></i> Academic Records</a>
+<a href="{{ url_for('student.my_courses') }}"       class="sidebar-link active"><i class="bi bi-book"></i> My Courses</a>
+<a href="{{ url_for('student.register_courses') }}" class="sidebar-link "><i class="bi bi-pencil-square"></i> Register Courses</a>
+<a href="{{ url_for('student.statement') }}"        class="sidebar-link "><i class="bi bi-file-earmark-text"></i> Statement of Results</a>
+<a href="{{ url_for('student.predict_cgpa') }}"     class="sidebar-link "><i class="bi bi-graph-up-arrow"></i> CGPA Predictor</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('student.update_profile') }}"   class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('student.change_password') }}"  class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-book"></i></div>
+      <div>
+        <h4 class="page-title">My Registered Courses</h4>
+        <p class="page-subtitle">{{ student.full_name }} &mdash; {{ student.matric_no }}</p>
+      </div>
+    </div>
+    <a href="{{ url_for('student.register_courses') }}" class="btn btn-gold btn-sm no-print">
+      <i class="bi bi-plus-lg"></i> Register Courses
+    </a>
+  </div>
+</div>
+
+<!-- Session filter -->
+<div class="card mb-4 no-print">
+  <div class="card-body" style="padding:.75rem 1.1rem;">
+    <form method="GET" style="display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap;">
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Session Year</label>
+        <input type="text" name="session" class="form-control" style="width:130px;" value="{{ session_year }}">
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Semester</label>
+        <select name="semester" class="form-select" style="width:140px;">
+          <option value="First"  {% if semester=='First'  %}selected{% endif %}>First</option>
+          <option value="Second" {% if semester=='Second' %}selected{% endif %}>Second</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-filter"></i> Filter</button>
+    </form>
+  </div>
+</div>
+
+<!-- Current semester summary -->
+{% if current_regs %}
+<div class="alert alert-info mb-4">
+  <i class="bi bi-info-circle-fill"></i>
+  <div>
+    <strong>{{ session_year }} — {{ semester }} Semester:</strong>
+    {{ current_regs|length }} course(s) &mdash; <strong>{{ current_units }} credit unit(s)</strong>
+    {% if current_units < min_units %}
+      <span class="badge badge-warning" style="margin-left:.5rem;"><i class="bi bi-exclamation-triangle"></i> Below NUC min ({{ min_units }})</span>
+    {% elif current_units > max_units %}
+      <span class="badge badge-danger" style="margin-left:.5rem;">Exceeds NUC max ({{ max_units }})</span>
+    {% else %}
+      <span class="badge badge-success" style="margin-left:.5rem;"><i class="bi bi-check"></i> Within NUC limits</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if registrations %}
+  {% set ns = namespace(last='') %}
+  {% for r in registrations %}
+    {% set key = r.session_year ~ '||' ~ r.semester %}
+    {% if key != ns.last %}
+      {% set ns.last = key %}
+      <div class="card mb-3">
+        <div style="background:var(--g700);color:#fff;padding:.65rem 1rem;border-radius:var(--r) var(--r) 0 0;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;font-size:.85rem;"><i class="bi bi-calendar-week me-2"></i>{{ r.session_year }} — {{ r.semester }} Semester</span>
+          <span class="badge badge-gold">
+            {{ registrations|selectattr('session_year','eq',r.session_year)|selectattr('semester','eq',r.semester)|list|length }} course(s)
+          </span>
+        </div>
+        <div class="card-body p-0">
+          <table class="portal-table">
+            <thead>
+              <tr><th>Code</th><th>Course Title</th><th style="text-align:center">Units</th><th>Lecturer</th><th>Registered On</th><th class="no-print">Action</th></tr>
+            </thead>
+            <tbody>
+    {% endif %}
+    <tr>
+      <td><strong>{{ r.course.course_code }}</strong></td>
+      <td>{{ r.course.course_title }}</td>
+      <td style="text-align:center;"><span class="badge badge-navy">{{ r.course.credit_unit }}</span></td>
+      <td style="font-size:.8rem;color:var(--n500);">{{ r.course.lecturer.full_name if r.course.lecturer else '—' }}</td>
+      <td style="font-size:.77rem;color:var(--n500);">{{ r.registered_at.strftime('%d/%m/%Y') }}</td>
+      <td class="no-print">
+        {% if active_session and active_session.registration_open %}
+        <form method="POST" action="{{ url_for('student.drop_course', reg_id=r.id) }}"
+              onsubmit="return confirmAction('Drop {{ r.course.course_code }}? This cannot be undone if scores exist.')">
+          <button type="submit" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-dash-circle"></i> Drop
+          </button>
+        </form>
+        {% else %}
+        <span style="font-size:.75rem;color:var(--n400);">Reg. closed</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% if loop.last or (registrations[loop.index].session_year ~ '||' ~ registrations[loop.index].semester != key if not loop.last else true) %}
+        </tbody>
+        {% set row_total = registrations|selectattr('session_year','eq',r.session_year)|selectattr('semester','eq',r.semester)|sum(attribute='course.credit_unit') %}
+        <tfoot><tr><td colspan="2">Total Credit Units</td><td style="text-align:center;">{{ row_total }}</td><td colspan="3"></td></tr></tfoot>
+        </table></div></div>
+    {% endif %}
+  {% endfor %}
+{% else %}
+<div style="text-align:center;padding:3rem 2rem;">
+  <i class="bi bi-journal-x" style="font-size:2.5rem;color:var(--n400);display:block;margin-bottom:1rem;"></i>
+  <h5 style="color:var(--g700);font-family:'Playfair Display',serif;">No Registered Courses</h5>
+  <p style="color:var(--n500);font-size:.83rem;max-width:360px;margin:0 auto .75rem;">
+    You haven't registered for any courses yet.
+  </p>
+  <a href="{{ url_for('student.register_courses') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-pencil-square"></i> Register Now
+  </a>
+</div>
+{% endif %}
+{% endblock %}

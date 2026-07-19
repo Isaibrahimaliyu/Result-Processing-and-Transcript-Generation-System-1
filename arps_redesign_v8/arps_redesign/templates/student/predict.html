@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}CGPA Predictor{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Student Portal</div>
+<a href="{{ url_for('student.dashboard') }}"        class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="{{ url_for('student.results') }}"          class="sidebar-link "><i class="bi bi-bar-chart-line"></i> Academic Records</a>
+<a href="{{ url_for('student.my_courses') }}"       class="sidebar-link "><i class="bi bi-book"></i> My Courses</a>
+<a href="{{ url_for('student.register_courses') }}" class="sidebar-link "><i class="bi bi-pencil-square"></i> Register Courses</a>
+<a href="{{ url_for('student.statement') }}"        class="sidebar-link "><i class="bi bi-file-earmark-text"></i> Statement of Results</a>
+<a href="{{ url_for('student.predict_cgpa') }}"     class="sidebar-link active"><i class="bi bi-graph-up-arrow"></i> CGPA Predictor</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('student.update_profile') }}"   class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('student.change_password') }}"  class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.grade-selector {
+  display: grid;
+  grid-template-columns: repeat(6,1fr);
+  gap: .35rem;
+}
+.grade-opt {
+  display: none;
+}
+.grade-lbl {
+  display: flex; align-items: center; justify-content: center;
+  height: 36px; border-radius: var(--r-sm);
+  font-weight: 700; font-size: .78rem;
+  border: 1.5px solid var(--border-s);
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--n500);
+  background: var(--surface);
+}
+.grade-opt:checked + .grade-lbl {
+  border-color: transparent;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.grade-opt[value="A"]:checked + .grade-lbl { background:#DCFCE7; color:#14532D; }
+.grade-opt[value="B"]:checked + .grade-lbl { background:#DBEAFE; color:#1E40AF; }
+.grade-opt[value="C"]:checked + .grade-lbl { background:#FEF9C3; color:#713F12; }
+.grade-opt[value="D"]:checked + .grade-lbl { background:#FFE4E6; color:#881337; }
+.grade-opt[value="E"]:checked + .grade-lbl { background:#F3F4F6; color:#374151; }
+.grade-opt[value="F"]:checked + .grade-lbl { background:#FEE2E2; color:#7F1D1D; }
+
+.cgpa-delta-positive { color: var(--success); font-weight:700; }
+.cgpa-delta-negative { color: var(--danger);  font-weight:700; }
+.cgpa-delta-neutral  { color: var(--n500);    font-weight:700; }
+
+.prediction-card {
+  background: linear-gradient(135deg, var(--g800), var(--g600));
+  border-radius: var(--r-lg); padding: 1.75rem;
+  color: #fff; position: relative; overflow: hidden;
+}
+.prediction-card::before {
+  content:''; position:absolute; width:200px; height:200px; border-radius:50%;
+  background: rgba(255,255,255,.04); top:-60px; right:-40px;
+}
+.pred-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem; position: relative; z-index: 1;
+}
+.pred-item { text-align: center; }
+.pred-lbl  { font-size:.63rem; font-weight:600; color:rgba(255,255,255,.45); text-transform:uppercase; letter-spacing:.7px; margin-bottom:.4rem; }
+.pred-val  { font-family:var(--font-serif); font-size:2.1rem; font-weight:700; color:var(--g300); line-height:1; }
+.pred-sub  { font-size:.72rem; color:rgba(255,255,255,.4); margin-top:.25rem; }
+.pred-class { font-family:var(--font-serif); font-size:.95rem; font-weight:700; color:#A7F3D0; margin-top:.4rem; line-height:1.3; }
+
+.course-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1rem 1.1rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.course-card:focus-within {
+  border-color: var(--g400);
+  box-shadow: 0 0 0 3px rgba(46,125,58,.08);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-header-icon"><i class="bi bi-graph-up-arrow" style="color:var(--g700);"></i></div>
+    <div>
+      <h4 class="page-title">CGPA Predictor</h4>
+      <p class="page-subtitle">Simulate hypothetical grades to forecast your future CGPA and degree class</p>
+    </div>
+  </div>
+</div>
+
+<!-- Current standing -->
+<div class="cgpa-box mb-4">
+  <div style="font-size:.7rem;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.75rem;position:relative;z-index:1;">
+    Your Current Academic Standing
+  </div>
+  <div class="cgpa-grid">
+    <div class="cgpa-item">
+      <div class="cgpa-label">Current CGPA</div>
+      <div class="cgpa-value">{{ "%.2f"|format(cgpa_data.cgpa) }}</div>
+      <div class="cgpa-class">{{ cgpa_data.degree_class }}</div>
+    </div>
+    <div class="cgpa-item">
+      <div class="cgpa-label">Credit Units Earned</div>
+      <div class="cgpa-value">{{ cgpa_data.total_units }}</div>
+      <div class="cgpa-class" style="color:rgba(255,255,255,.45);">total so far</div>
+    </div>
+    <div class="cgpa-item">
+      <div class="cgpa-label">Quality Points</div>
+      <div class="cgpa-value">{{ "%.1f"|format(cgpa_data.total_quality_points) }}</div>
+      <div class="cgpa-class" style="color:rgba(255,255,255,.45);">accumulated</div>
+    </div>
+    <div class="cgpa-item">
+      <div class="cgpa-label">Level</div>
+      <div class="cgpa-value" style="font-size:1.6rem;">{{ student.level }}</div>
+      <div class="cgpa-class" style="color:rgba(255,255,255,.45);">Level</div>
+    </div>
+  </div>
+</div>
+
+{% if prediction %}
+<!-- Prediction result -->
+<div class="prediction-card mb-4">
+  <div style="font-size:.7rem;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.85rem;position:relative;z-index:1;">
+    <i class="bi bi-stars me-1" style="color:var(--g300);"></i> Prediction Result
+  </div>
+  <div class="pred-grid">
+    <div class="pred-item">
+      <div class="pred-lbl">Predicted CGPA</div>
+      <div class="pred-val">{{ "%.2f"|format(prediction.future_cgpa) }}</div>
+      <div class="pred-sub">out of 5.00</div>
+      {% if prediction.cgpa_change > 0 %}
+        <div style="margin-top:.5rem;font-size:.75rem;color:#A7F3D0;font-weight:600;">
+          <i class="bi bi-arrow-up"></i> +{{ "%.2f"|format(prediction.cgpa_change) }} from current
+        </div>
+      {% elif prediction.cgpa_change < 0 %}
+        <div style="margin-top:.5rem;font-size:.75rem;color:#FCA5A5;font-weight:600;">
+          <i class="bi bi-arrow-down"></i> {{ "%.2f"|format(prediction.cgpa_change) }} from current
+        </div>
+      {% else %}
+        <div style="margin-top:.5rem;font-size:.75rem;color:rgba(255,255,255,.4);">No change</div>
+      {% endif %}
+    </div>
+    <div class="pred-item">
+      <div class="pred-lbl">Predicted Class</div>
+      <div class="pred-class" style="font-size:1.1rem;margin-top:.35rem;">{{ prediction.future_class }}</div>
+    </div>
+    <div class="pred-item">
+      <div class="pred-lbl">Total Units After</div>
+      <div class="pred-val">{{ prediction.future_units }}</div>
+      <div class="pred-sub">+{{ prediction.hypo_units }} new units</div>
+    </div>
+  </div>
+
+  <!-- Simulated courses summary -->
+  <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.1);position:relative;z-index:1;">
+    <div style="font-size:.7rem;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:.6rem;">Simulated Courses</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+      {% for c in prediction.hypo_courses %}
+      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-sm);padding:.3rem .65rem;font-size:.75rem;color:rgba(255,255,255,.75);">
+        <strong>{{ c.code }}</strong>
+        <span class="grade-chip g-{{ c.grade }}" style="margin-left:.3rem;width:20px;height:20px;font-size:.67rem;">{{ c.grade }}</span>
+        <span style="color:rgba(255,255,255,.45);margin-left:.25rem;">({{ c.credit_unit }} units)</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Prediction form -->
+<div class="card">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-sliders me-2"></i>Simulate Your Grades</span>
+    <span style="font-size:.72rem;color:rgba(255,255,255,.45);">
+      Select hypothetical grades for courses below
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info mb-4" style="font-size:.8rem;">
+      <i class="bi bi-lightbulb-fill"></i>
+      <div>
+        <strong>How it works:</strong> Pick grades you expect (or are aiming for) in upcoming courses.
+        The predictor adds them to your current earned CGPA and shows your projected result.
+        The more accurately you estimate, the better the prediction.
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('student.predict_cgpa') }}" id="predictForm">
+
+      <!-- Section: Registered current courses (not yet scored) -->
+      {% if registered_courses %}
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:.72rem;font-weight:700;color:var(--g700);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--g500);display:inline-block;"></span>
+          Current Session — Registered Courses (not yet scored)
+        </div>
+        <div class="grid-2" style="gap:.75rem;">
+          {% for course in registered_courses %}
+          <div class="course-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.7rem;">
+              <div>
+                <div style="font-weight:700;font-size:.82rem;color:var(--g800);">{{ course.course_code }}</div>
+                <div style="font-size:.77rem;color:var(--n500);margin-top:1px;">{{ course.course_title[:45] }}{% if course.course_title|length > 45 %}…{% endif %}</div>
+              </div>
+              <span class="badge badge-green">{{ course.credit_unit }} units</span>
+            </div>
+            <div class="grade-selector">
+              {% for grade in ['A','B','C','D','E','F'] %}
+              <input type="radio" class="grade-opt" name="grade_{{ course.id }}" id="g_{{ course.id }}_{{ grade }}" value="{{ grade }}"
+                     {% if prediction %}{% for c in prediction.hypo_courses %}{% if c.code == course.course_code and c.grade == grade %}checked{% endif %}{% endfor %}{% endif %}>
+              <label class="grade-lbl" for="g_{{ course.id }}_{{ grade }}">{{ grade }}</label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Section: Add any course manually -->
+      <div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--n600);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--n300);display:inline-block;"></span>
+          Other {{ student.level }}-Level Courses — Add to Simulation
+        </div>
+        <div class="grid-2" style="gap:.75rem;">
+          {% for course in all_courses %}
+          {% if course not in registered_courses %}
+          <div class="course-card" style="opacity:.85;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.7rem;">
+              <div>
+                <div style="font-weight:700;font-size:.82rem;color:var(--g800);">{{ course.course_code }}</div>
+                <div style="font-size:.77rem;color:var(--n500);margin-top:1px;">{{ course.course_title[:45] }}{% if course.course_title|length > 45 %}…{% endif %}</div>
+              </div>
+              <span class="badge badge-neutral">{{ course.credit_unit }} units</span>
+            </div>
+            <div class="grade-selector">
+              <input type="radio" class="grade-opt" name="grade_{{ course.id }}" id="g_{{ course.id }}_none" value="" checked style="display:none;">
+              {% for grade in ['A','B','C','D','E','F'] %}
+              <input type="radio" class="grade-opt" name="grade_{{ course.id }}" id="g_{{ course.id }}_{{ grade }}" value="{{ grade }}"
+                     {% if prediction %}{% for c in prediction.hypo_courses %}{% if c.code == course.course_code and c.grade == grade %}checked{% endif %}{% endfor %}{% endif %}>
+              <label class="grade-lbl" for="g_{{ course.id }}_{{ grade }}">{{ grade }}</label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if not registered_courses and not all_courses %}
+      <div class="empty-state">
+        <i class="bi bi-book"></i>
+        <p>No courses found for your level. Make sure courses are added in the Course Directory.</p>
+      </div>
+      {% else %}
+      <div style="margin-top:1.5rem;display:flex;gap:.75rem;align-items:center;">
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-calculator"></i> Predict My CGPA
+        </button>
+        <button type="reset" class="btn btn-outline"
+                onclick="document.querySelectorAll('.grade-opt').forEach(r=>r.checked=false);">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset
+        </button>
+        {% if prediction %}
+        <div style="margin-left:auto;font-size:.78rem;color:var(--n500);">
+          Scroll up to see your prediction result
+          <i class="bi bi-arrow-up ms-1"></i>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Grade point reference -->
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header ch-surface">
+    <span><i class="bi bi-info-circle me-2"></i>NUC Grading Scale (5.0) Reference</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead><tr><th>Grade</th><th>Score Range</th><th>Grade Point</th><th>Classification</th></tr></thead>
+      <tbody>
+        {% for g, rng, gp, cls in [
+          ('A','70 – 100','5.0','Excellent'),
+          ('B','60 – 69','4.0','Very Good'),
+          ('C','50 – 59','3.0','Good'),
+          ('D','45 – 49','2.0','Pass'),
+          ('E','40 – 44','1.0','Marginal Pass'),
+          ('F','0 – 39', '0.0','Fail'),
+        ] %}
+        <tr>
+          <td><span class="grade-chip g-{{ g }}">{{ g }}</span></td>
+          <td style="font-family:var(--font-mono);">{{ rng }}</td>
+          <td style="font-weight:700;">{{ gp }}</td>
+          <td style="color:var(--n500);">{{ cls }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
