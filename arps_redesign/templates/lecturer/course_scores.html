@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ course.course_code }} — Score Sheet{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Lecturer Portal</div>
+<a href="{{ url_for('lecturer.dashboard') }}"         class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Teaching</div>
+<a href="{{ url_for('lecturer.dashboard') }}"     class="sidebar-link active"><i class="bi bi-table"></i> Course Scores</a>
+<a href="{{ url_for('lecturer.dashboard') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Bulk Upload</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('lecturer.lecturer_profile') }}"  class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('lecturer.lecturer_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-list-ul"></i></div>
+      <div>
+        <h4 class="page-title">{{ course.course_code }} — Score Sheet</h4>
+        <p class="page-subtitle">{{ course.course_title }} &mdash; {{ course.credit_unit }} unit(s) &mdash; {{ course.level }} Level</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 no-print">
+      <a href="{{ url_for('lecturer.enter_score', course_id=course.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Enter Score</a>
+      <a href="{{ url_for('lecturer.bulk_upload', course_id=course.id) }}" class="btn btn-gold btn-sm"><i class="bi bi-upload"></i> CSV Upload</a>
+      <button onclick="printPage()" class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3);"><i class="bi bi-printer"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Session filter -->
+<div class="card mb-3 no-print">
+  <div class="card-body" style="padding:.75rem 1rem;">
+    <form method="GET" style="display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap;">
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Session Year</label>
+        <input type="text" name="session" class="form-control" style="width:130px;" value="{{ session_year }}">
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:.25rem;">Semester</label>
+        <select name="semester" class="form-select" style="width:140px;">
+          <option value="First"  {% if semester=='First'  %}selected{% endif %}>First</option>
+          <option value="Second" {% if semester=='Second' %}selected{% endif %}>Second</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-filter"></i> Filter</button>
+      <div style="margin-left:auto;">
+        <input type="text" id="globalSearch" class="form-control" style="width:200px;" placeholder="🔍 Search student...">
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if scores %}
+{% set passed = scores|selectattr('grade','ne','F')|list|length %}
+{% set failed = scores|length - passed %}
+<div class="grid-4 mb-3">
+  <div class="stat-card accent-navy" style="padding:.65rem 1rem;">
+    <div class="stat-value" style="font-size:1.4rem;">{{ scores|length }}</div>
+    <div class="stat-label">Students</div>
+  </div>
+  <div class="stat-card accent-green" style="padding:.65rem 1rem;">
+    <div class="stat-value" style="font-size:1.4rem;color:var(--success);">{{ passed }}</div>
+    <div class="stat-label">Passed</div>
+  </div>
+  <div class="stat-card" style="padding:.65rem 1rem;border-bottom:3px solid var(--danger);">
+    <div class="stat-value" style="font-size:1.4rem;color:var(--danger);">{{ failed }}</div>
+    <div class="stat-label">Failed</div>
+  </div>
+  <div class="stat-card accent-gold" style="padding:.65rem 1rem;">
+    <div class="stat-value" style="font-size:1.4rem;">{{ (scores|sum(attribute='total_score')/scores|length)|round(1) }}</div>
+    <div class="stat-label">Class Average</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>#</th><th>Matric No</th><th>Student Name</th><th style="text-align:center">CA (30)</th><th style="text-align:center">Exam (70)</th><th style="text-align:center">Total</th><th style="text-align:center">Grade</th><th style="text-align:center">GP</th><th class="no-print">Edit</th></tr>
+      </thead>
+      <tbody>
+        {% for s in scores %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.77rem;">{{ loop.index }}</td>
+          <td><strong>{{ s.student.matric_no }}</strong></td>
+          <td>{{ s.student.full_name }}</td>
+          <td style="text-align:center;">{{ s.ca_score }}</td>
+          <td style="text-align:center;">{{ s.exam_score }}</td>
+          <td style="text-align:center;font-weight:700;">{{ s.total_score }}</td>
+          <td style="text-align:center;"><span class="grade-chip g-{{ s.grade }}">{{ s.grade }}</span></td>
+          <td style="text-align:center;font-weight:600;">{{ s.grade_point }}</td>
+          <td class="no-print">
+            <a href="{{ url_for('lecturer.enter_score', course_id=course.id) }}?edit={{ s.student.matric_no }}&session={{ session_year }}&semester={{ semester }}" class="btn btn-outline btn-sm"><i class="bi bi-pencil"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center;padding:3rem 2rem;">
+  <i class="bi bi-clipboard-x" style="font-size:2.5rem;color:var(--n400);display:block;margin-bottom:1rem;"></i>
+  <h5 style="color:var(--g700);font-family:'Playfair Display',serif;">No Scores Entered Yet</h5>
+  <p style="color:var(--n500);font-size:.83rem;max-width:380px;margin:0 auto .75rem;">
+    No scores for <strong>{{ session_year }} — {{ semester }} Semester</strong>.
+  </p>
+  <div class="d-flex gap-2" style="justify-content:center;">
+    <a href="{{ url_for('lecturer.enter_score', course_id=course.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i> Enter Scores</a>
+    <a href="{{ url_for('lecturer.bulk_upload', course_id=course.id) }}" class="btn btn-gold btn-sm"><i class="bi bi-upload"></i> Upload CSV</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

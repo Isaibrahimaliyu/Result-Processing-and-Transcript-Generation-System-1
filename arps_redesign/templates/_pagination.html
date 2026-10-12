@@ -1,0 +1,32 @@
+{# Reusable pagination bar.
+   Usage: {% include "_pagination.html" %}
+   Requires in context: `pagination` (a Flask-SQLAlchemy Pagination object)
+   and `endpoint` (string, e.g. 'admin.students').
+   Any extra query args to preserve across pages should be passed via `extra_args` (dict). #}
+{% if pagination and pagination.pages > 1 %}
+<nav class="pager no-print" aria-label="Page navigation">
+  {% set first_item = ((pagination.page - 1) * pagination.per_page) + 1 %}
+  {% set last_item = [pagination.page * pagination.per_page, pagination.total] | min %}
+  <span class="pager-info">
+    Showing <strong>{{ first_item }}–{{ last_item }}</strong> of <strong>{{ pagination.total }}</strong>
+  </span>
+  <div class="pager-controls">
+    <a class="pager-btn {{ 'disabled' if not pagination.has_prev }}"
+       href="{{ url_for(endpoint, page=pagination.prev_num, **(extra_args or {})) if pagination.has_prev else '#' }}">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+      {% if p %}
+        <a class="pager-btn {{ 'active' if p == pagination.page }}"
+           href="{{ url_for(endpoint, page=p, **(extra_args or {})) }}">{{ p }}</a>
+      {% else %}
+        <span class="pager-ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+    <a class="pager-btn {{ 'disabled' if not pagination.has_next }}"
+       href="{{ url_for(endpoint, page=pagination.next_num, **(extra_args or {})) if pagination.has_next else '#' }}">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+  </div>
+</nav>
+{% endif %}

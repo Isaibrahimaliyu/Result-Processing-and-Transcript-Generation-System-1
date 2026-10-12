@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}QR Transcript Tokens{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link active"><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-qr-code"></i></div>
+      <div>
+        <h4 class="page-title">QR Transcript Verification Tokens</h4>
+        <p class="page-subtitle">Manage all issued transcript QR codes and their verification status</p>
+      </div>
+    </div>
+    <a href="/verify" target="_blank" class="btn btn-gold btn-sm no-print">
+      <i class="bi bi-box-arrow-up-right"></i> Open Verification Portal
+    </a>
+  </div>
+</div>
+
+<!-- How it works panel -->
+<div class="card mb-4" style="border-top:3px solid var(--g300);">
+  <div class="card-body" style="padding:1rem 1.25rem;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+      {% for icon, title, desc, col in [
+        ('bi-file-earmark-pdf',  'Admin Downloads PDF',   'Admin clicks "Download PDF" on a student transcript. A unique QR token is auto-generated.', '#8567DC'),
+        ('bi-qr-code',           'QR Embedded in PDF',    'The QR code is printed at the bottom of the official transcript PDF document.', '#C9922A'),
+        ('bi-phone',             'Employer Scans QR',     'Employers, NYSC, or anyone receiving the transcript scans the QR code with their phone.', '#059669'),
+        ('bi-shield-check-fill', 'Instant Verification',  'The verification portal confirms the transcript is authentic and shows exact academic records.', '#1D5FA8'),
+      ] %}
+      <div style="display:flex;gap:.6rem;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:8px;background:{{ col }}15;border:1px solid {{ col }}30;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="bi {{ icon }}" style="color:{{ col }};font-size:.9rem;"></i>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:.8rem;color:var(--g700);margin-bottom:.15rem;">{{ title }}</div>
+          <p style="font-size:.73rem;color:var(--n500);margin:0;line-height:1.5;">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Summary stats -->
+<div class="stats-grid">
+  <div class="stat-card accent-navy" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-navy"><i class="bi bi-qr-code-scan"></i></div>
+    <div class="stat-value">{{ total_count }}</div>
+    <div class="stat-label">Total Tokens Issued</div>
+  </div>
+  <div class="stat-card accent-green" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-green"><i class="bi bi-shield-check"></i></div>
+    <div class="stat-value" style="color:var(--success);">{{ valid_count }}</div>
+    <div class="stat-label">Active &amp; Valid</div>
+  </div>
+  <div class="stat-card" style="padding:.75rem 1rem;border-bottom:3px solid var(--danger)!important;">
+    <div class="stat-icon" style="background:var(--danger-bg);color:var(--danger);"><i class="bi bi-shield-slash"></i></div>
+    <div class="stat-value" style="color:var(--danger);">{{ revoked_count }}</div>
+    <div class="stat-label">Revoked</div>
+  </div>
+  <div class="stat-card accent-gold" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-amber"><i class="bi bi-eye"></i></div>
+    <div class="stat-value">{{ total_scans }}</div>
+    <div class="stat-label">Total QR Scans</div>
+  </div>
+</div>
+
+<!-- Tokens table -->
+<div class="card">
+  <div class="card-header ch-primary" style="justify-content:space-between;">
+    <span><i class="bi bi-list-check me-2"></i>All Issued Tokens</span>
+    <input type="text" id="globalSearch" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);padding:4px 10px;color:#fff;font-size:.77rem;width:200px;" placeholder="🔍 Search by matric, name...">
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Matric No</th>
+          <th>Student Name</th>
+          <th>Token ID (partial)</th>
+          <th>Note / Purpose</th>
+          <th style="text-align:center">Status</th>
+          <th style="text-align:center">Scans</th>
+          <th>Generated</th>
+          <th>Last Scanned</th>
+          <th class="no-print">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tt in tokens %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.75rem;">{{ loop.index }}</td>
+          <td><strong>{{ tt.student.matric_no }}</strong></td>
+          <td style="font-size:.82rem;">{{ tt.student.full_name }}</td>
+          <td>
+            <span style="font-family:monospace;font-size:.75rem;color:var(--n500);background:var(--surface);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">
+              {{ tt.token[:20] }}…
+            </span>
+          </td>
+          <td style="font-size:.78rem;color:var(--n500);">{{ tt.note or '—' }}</td>
+          <td style="text-align:center;">
+            {% if tt.is_revoked %}
+              <span class="badge badge-danger"><i class="bi bi-slash-circle-fill"></i> Revoked</span>
+            {% elif tt.expires_at and tt.expires_at < now %}
+              <span class="badge badge-neutral"><i class="bi bi-clock"></i> Expired</span>
+            {% else %}
+              <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Valid</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            <span class="badge badge-info">{{ tt.scan_count }}</span>
+          </td>
+          <td style="font-size:.76rem;color:var(--n500);">{{ tt.generated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td style="font-size:.76rem;color:var(--n500);">
+            {{ tt.last_scanned.strftime('%d/%m/%Y %H:%M') if tt.last_scanned else '—' }}
+          </td>
+          <td class="no-print">
+            <div class="d-flex gap-1">
+              <!-- View verification result -->
+              <a href="{{ url_for('verify.public_verify', signed_token=tt.token) }}"
+                 target="_blank" class="btn btn-outline btn-sm" title="Test Verification Link">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+              <!-- Download QR PNG -->
+              <a href="{{ url_for('admin.download_token_qr', token_id=tt.id) }}"
+                 class="btn btn-primary btn-sm" title="Download QR Code PNG">
+                <i class="bi bi-qr-code"></i>
+              </a>
+              <!-- Revoke -->
+              {% if not tt.is_revoked %}
+              <form method="POST" action="{{ url_for('admin.revoke_token', token_id=tt.id) }}"
+                    onsubmit="return confirmAction('Revoke this token? The QR code will immediately stop working.')">
+                <button type="submit" class="btn btn-outline-danger btn-sm" title="Revoke Token">
+                  <i class="bi bi-slash-circle"></i>
+                </button>
+              </form>
+              {% else %}
+              <span style="font-size:.72rem;color:var(--n400);padding:.3rem .5rem;">
+                Revoked {{ tt.revoked_at.strftime('%d/%m') if tt.revoked_at else '' }}
+              </span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align:center;color:var(--n500);padding:3rem 2rem;">
+            <i class="bi bi-qr-code" style="font-size:2rem;display:block;margin-bottom:.75rem;color:var(--n400);"></i>
+            No tokens issued yet. Tokens are generated automatically when you
+            <a href="{{ url_for('admin.students') }}" style="font-weight:700;">download a transcript PDF</a>.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with endpoint='admin.tokens' %}
+    {% include "_pagination.html" %}
+  {% endwith %}
+</div>
+{% endblock %}

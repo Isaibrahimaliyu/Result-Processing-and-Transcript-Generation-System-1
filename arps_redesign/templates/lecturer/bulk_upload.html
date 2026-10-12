@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Bulk Upload — {{ course.course_code }}{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Lecturer Portal</div>
+<a href="{{ url_for('lecturer.dashboard') }}"         class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Teaching</div>
+<a href="{{ url_for('lecturer.dashboard') }}"     class="sidebar-link "><i class="bi bi-table"></i> Course Scores</a>
+<a href="{{ url_for('lecturer.dashboard') }}"       class="sidebar-link active"><i class="bi bi-cloud-upload"></i> Bulk Upload</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('lecturer.lecturer_profile') }}"  class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('lecturer.lecturer_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-upload"></i></div>
+      <div>
+        <h4 class="page-title">Bulk Score Upload (Pipelining)</h4>
+        <p class="page-subtitle">{{ course.course_code }} &mdash; {{ course.course_title }}</p>
+      </div>
+    </div>
+  </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+  <div>
+    <div class="card mb-3">
+      <div class="card-header ch-primary"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Upload CSV File</div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label class="form-label">Session Year <span class="req">*</span></label>
+            <input type="text" name="session_year" class="form-control" value="2023/2024" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester <span class="req">*</span></label>
+            <select name="semester" class="form-select">
+              <option value="First"  {% if course.semester=='First'  %}selected{% endif %}>First</option>
+              <option value="Second" {% if course.semester=='Second' %}selected{% endif %}>Second</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CSV File <span class="req">*</span></label>
+            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+            <p style="font-size:.73rem;color:var(--n500);margin-top:.3rem;">Columns: <code>matric_no, ca_score, exam_score</code></p>
+          </div>
+          <div class="alert alert-warning" style="font-size:.77rem;">
+            <i class="bi bi-shield-lock-fill"></i>
+            <div>Uploaded scores are <strong>not visible to students</strong> until the Examination Officer publishes results. Errors abort the entire upload (ACID rollback).</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="justify-content:center;">
+            <i class="bi bi-cloud-upload"></i> Upload &amp; Process
+          </button>
+        </form>
+      </div>
+    </div>
+
+    {% if errors %}
+    <div class="card" style="border:1.5px solid var(--danger);">
+      <div class="card-header" style="background:var(--danger-bg);color:var(--danger);border-bottom:1px solid #FECACA;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errors|length }} Error(s) — Upload Aborted
+      </div>
+      <div class="card-body p-0">
+        {% for e in errors %}
+        <div style="padding:.45rem .85rem;border-bottom:1px solid var(--border);font-size:.77rem;color:var(--danger);"><i class="bi bi-x-circle me-1"></i>{{ e }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header ch-surface"><i class="bi bi-info-circle me-2"></i>CSV Format Guide</div>
+    <div class="card-body">
+      <p style="font-size:.8rem;color:var(--n500);margin-bottom:.75rem;">Your CSV file must follow this exact format:</p>
+      <table class="portal-table" style="font-size:.78rem;">
+        <thead><tr><th>matric_no</th><th style="text-align:center">ca_score</th><th style="text-align:center">exam_score</th></tr></thead>
+        <tbody>
+          <tr><td>U22/FNS/CSC/1290</td><td style="text-align:center;">25</td><td style="text-align:center;">60</td></tr>
+          <tr><td>U22/FNS/CSC/1013</td><td style="text-align:center;">28</td><td style="text-align:center;">55</td></tr>
+          <tr><td>U22/FNS/CSC/1050</td><td style="text-align:center;">20</td><td style="text-align:center;">45</td></tr>
+        </tbody>
+      </table>
+      <ul style="font-size:.77rem;color:var(--n500);margin-top:.75rem;padding-left:1.1rem;">
+        <li><code>ca_score</code>: 0–30 (Continuous Assessment)</li>
+        <li><code>exam_score</code>: 0–70 (Final Examination)</li>
+        <li>If <strong>any row</strong> has an error, the <strong>entire upload is aborted</strong></li>
+        <li>Existing scores for the same student/course/session are updated</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

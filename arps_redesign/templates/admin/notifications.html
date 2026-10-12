@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Email Notifications{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link active"><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-envelope-fill"></i></div>
+      <div>
+        <h4 class="page-title">Email Notification Centre</h4>
+        <p class="page-subtitle">Send result release notifications directly to students' email addresses</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card accent-navy" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-navy"><i class="bi bi-send-fill"></i></div>
+    <div class="stat-value">{{ total_count }}</div>
+    <div class="stat-label">Total Emails Sent</div>
+  </div>
+  <div class="stat-card accent-green" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-green"><i class="bi bi-check-circle-fill"></i></div>
+    <div class="stat-value" style="color:var(--success);">{{ sent_count }}</div>
+    <div class="stat-label">Delivered Successfully</div>
+  </div>
+  <div class="stat-card" style="padding:.75rem 1rem;border-bottom:3px solid var(--danger)!important;">
+    <div class="stat-icon" style="background:var(--danger-bg);color:var(--danger);"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    <div class="stat-value" style="color:var(--danger);">{{ failed_count }}</div>
+    <div class="stat-label">Failed</div>
+  </div>
+  <div class="stat-card accent-gold" style="padding:.75rem 1rem;">
+    <div class="stat-icon si-amber"><i class="bi bi-people-fill"></i></div>
+    <div class="stat-value">{{ unique_students }}</div>
+    <div class="stat-label">Students Notified</div>
+  </div>
+</div>
+
+<div class="grid-2-3 mb-4" style="gap:1.5rem;">
+
+  <!-- Send bulk notification form -->
+  <div class="card">
+    <div class="card-header ch-primary">
+      <span><i class="bi bi-send me-2"></i>Send Bulk Result Notification</span>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('admin.send_bulk_notifications') }}">
+        <div class="form-group">
+          <label class="form-label">Session Year <span class="req">*</span></label>
+          {% if sessions %}
+          <select name="session_year" class="form-select" required>
+            <option value="">— Select Session —</option>
+            {% for s in sessions %}
+            <option value="{{ s.session_year }}">{{ s.session_year }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input type="text" name="session_year" class="form-control" placeholder="e.g. 2023/2024" required>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="req">*</span></label>
+          <select name="semester" class="form-select" required>
+            <option value="First">First Semester</option>
+            <option value="Second">Second Semester</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Level <span style="font-weight:400;color:var(--n500)">(leave blank for all)</span></label>
+          <select name="level" class="form-select">
+            <option value="">All Levels</option>
+            {% for l in levels %}
+            <option value="{{ l }}">{{ l }} Level</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Important notice -->
+        <div class="alert alert-warning" style="font-size:.78rem;margin-bottom:1rem;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>
+            Emails are only sent to students who have an email address on file.
+            Students without emails are silently skipped.
+            <a href="{{ url_for('admin.students') }}" style="font-weight:700;">Update student emails →</a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" style="justify-content:center;"
+                onclick="return confirmAction('Send result notification emails to all matching students?')">
+          <i class="bi bi-send-fill"></i> Send Notifications Now
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Email config status + tips -->
+  <div>
+    <div class="card mb-3">
+      <div class="card-header ch-surface"><i class="bi bi-gear me-2"></i>Email Configuration Status</div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          {% for label, val in [
+            ('SMTP Server',   config.MAIL_SERVER),
+            ('Port',          config.MAIL_PORT),
+            ('TLS Enabled',   'Yes' if config.MAIL_USE_TLS else 'No'),
+            ('From Address',  config.MAIL_DEFAULT_SENDER),
+            ('Username Set',  'Yes ✓' if config.MAIL_USERNAME else '❌ Not configured'),
+            ('Password Set',  'Yes ✓' if config.MAIL_PASSWORD else '❌ Not configured'),
+          ] %}
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.4rem 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--n500);font-weight:600;">{{ label }}</span>
+            <span style="color:var(--g700);font-weight:500;">{{ val }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if not config.MAIL_USERNAME %}
+        <div class="alert alert-warning mt-3" style="font-size:.77rem;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>
+            Email is not configured. Add these to your <code>.env</code> file:
+            <pre style="margin:.4rem 0 0;font-size:.72rem;background:var(--surface);padding:.4rem .6rem;border-radius:4px;">MAIL_USERNAME=your@gmail.com
+MAIL_PASSWORD=your_app_password</pre>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-success mt-3" style="font-size:.77rem;">
+          <i class="bi bi-check-circle-fill"></i>
+          <div>Email is configured and ready to send.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header ch-surface"><i class="bi bi-lightbulb me-2"></i>Setup Tips</div>
+      <div class="card-body" style="padding:.85rem 1rem;">
+        <ul style="font-size:.78rem;color:var(--n500);padding-left:1.1rem;margin:0;line-height:1.9;">
+          <li><strong>Gmail:</strong> Enable 2FA → generate an <em>App Password</em> → use it as <code>MAIL_PASSWORD</code></li>
+          <li><strong>Outlook/Hotmail:</strong> Use <code>smtp.office365.com</code>, port <code>587</code></li>
+          <li><strong>University SMTP:</strong> Contact IT for <code>smtp.ibbul.edu.ng</code> credentials</li>
+          <li>Set <code>MAIL_SUPPRESS_SEND=true</code> in <code>.env</code> to test without sending</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Test email -->
+<div class="card mb-4" style="border-top:3px solid var(--g300);">
+  <div class="card-header ch-surface">
+    <i class="bi bi-envelope-check me-2"></i>Test Email Configuration
+  </div>
+  <div class="card-body">
+    <p style="font-size:.82rem;color:var(--n500);margin-bottom:1rem;">
+      Before sending bulk notifications, verify your SMTP settings are working by
+      sending a test email to yourself.
+    </p>
+    <form method="POST" action="{{ url_for('admin.test_email') }}"
+          style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:240px;">
+        <label class="form-label">Send test to</label>
+        <div class="input-group">
+          <span class="input-addon"><i class="bi bi-envelope"></i></span>
+          <input type="email" name="test_email" class="form-control"
+                 placeholder="your@email.com" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-gold btn-sm">
+        <i class="bi bi-send"></i> Send Test Email
+      </button>
+    </form>
+    {% if not config.MAIL_USERNAME %}
+    <div class="alert alert-warning mt-3" style="font-size:.78rem;">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <div>
+        <strong>Email not configured.</strong> Add these to your <code>.env</code> file:<br>
+        <code style="display:block;margin-top:.4rem;background:var(--surface);padding:.35rem .6rem;border-radius:4px;">
+MAIL_USERNAME=your@gmail.com<br>
+MAIL_PASSWORD=your_16char_app_password<br>
+MAIL_DEFAULT_SENDER=IBB University ARPTGS &lt;your@gmail.com&gt;
+        </code>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Notification log -->
+<div class="card">
+  <div class="card-header ch-primary" style="justify-content:space-between;">
+    <span><i class="bi bi-clock-history me-2"></i>Notification Log</span>
+    <input type="text" id="globalSearch" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);padding:4px 10px;color:#fff;font-size:.77rem;width:200px;" placeholder="🔍 Search...">
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Student</th><th>Email Address</th>
+          <th>Session</th><th>Semester</th>
+          <th style="text-align:center">Status</th>
+          <th>Sent At</th><th>Sent By</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.75rem;">{{ loop.index }}</td>
+          <td>
+            <div style="font-weight:700;font-size:.8rem;">{{ log.student.matric_no }}</div>
+            <div style="font-size:.73rem;color:var(--n500);">{{ log.student.full_name }}</div>
+          </td>
+          <td style="font-size:.78rem;font-family:monospace;color:var(--n500);">{{ log.recipient_email }}</td>
+          <td style="font-size:.78rem;">{{ log.session_year or '—' }}</td>
+          <td style="font-size:.78rem;">{{ log.semester or '—' }}</td>
+          <td style="text-align:center;">
+            {% if log.status == 'sent' %}
+              <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Delivered</span>
+            {% elif log.status == 'failed' %}
+              <span class="badge badge-danger"><i class="bi bi-x-circle-fill"></i> Failed</span>
+            {% else %}
+              <span class="badge badge-neutral">Suppressed</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.75rem;color:var(--n500);white-space:nowrap;">{{ log.sent_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td style="font-size:.76rem;">{{ log.sender.username if log.sender else '—' }}</td>
+          <td style="font-size:.73rem;color:var(--danger);">
+            {% if log.error_message %}
+              <span title="{{ log.error_message }}">{{ log.error_message[:40] }}…</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center;color:var(--n500);padding:3rem 2rem;">
+            <i class="bi bi-envelope" style="font-size:2rem;display:block;margin-bottom:.75rem;color:var(--n400);"></i>
+            No notifications sent yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with endpoint='admin.notifications' %}
+    {% include "_pagination.html" %}
+  {% endwith %}
+</div>
+{% endblock %}

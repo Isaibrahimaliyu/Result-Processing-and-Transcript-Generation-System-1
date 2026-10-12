@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Computation Engine{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link active"><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-cpu"></i></div>
+      <div>
+        <h4 class="page-title">GPA / CGPA Computation Engine</h4>
+        <p class="page-subtitle">Department-wide results — NUC 5.0 scale (admin view, all scores)</p>
+      </div>
+    </div>
+    <div class="d-flex gap-2 no-print">
+      <a href="{{ url_for('admin.publications') }}" class="btn btn-gold btn-sm">
+        <i class="bi bi-megaphone"></i> Publish Results
+      </a>
+      <a href="{{ url_for('admin.compute') }}" class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3);">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </a>
+      <button onclick="printPage()" class="btn btn-outline btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3);"><i class="bi bi-printer"></i></button>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mb-4" style="font-size:.8rem;">
+  <i class="bi bi-eye-fill"></i>
+  <div>
+    This page shows <strong>all scores</strong> regardless of publication status — for your review before publishing.
+    Students only see results you have published on the
+    <a href="{{ url_for('admin.publications') }}" style="font-weight:700;">Result Publication</a> page.
+  </div>
+</div>
+
+{% if results %}
+<!-- Classification summary -->
+{% set cls_counts = {} %}
+{% for r in results %}
+  {% if r.degree_class not in cls_counts %}{% set _ = cls_counts.update({r.degree_class: 0}) %}{% endif %}
+  {% set _ = cls_counts.update({r.degree_class: cls_counts[r.degree_class]+1}) %}
+{% endfor %}
+
+<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+  <div class="stat-card accent-navy" style="padding:.65rem 1rem;flex:1;min-width:120px;">
+    <div class="stat-value" style="font-size:1.5rem;">{{ results|length }}</div>
+    <div class="stat-label">Total Students</div>
+  </div>
+  {% for cls,cnt in cls_counts.items() %}
+  <div class="stat-card accent-gold" style="padding:.65rem 1rem;flex:1;min-width:140px;">
+    <div class="stat-value" style="font-size:1.5rem;color:var(--g700);">{{ cnt }}</div>
+    <div class="stat-label" style="font-size:.68rem;">{{ cls|truncate(24,true,'…') }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header ch-primary" style="justify-content:space-between;">
+    <span><i class="bi bi-table me-2"></i>Department Results Summary</span>
+    <input type="text" id="globalSearch" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-sm);padding:4px 10px;color:#fff;font-size:.77rem;width:180px;" placeholder="🔍 Search...">
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>#</th><th>Matric No</th><th>Full Name</th><th>Level</th><th style="text-align:center">Units</th><th style="text-align:center">CGPA</th><th>Classification</th><th class="no-print">Transcript</th></tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.77rem;">{{ loop.index }}</td>
+          <td><strong>{{ r.matric_no }}</strong></td>
+          <td>{{ r.full_name }}</td>
+          <td><span class="badge badge-navy">{{ r.level }}</span></td>
+          <td style="text-align:center;">{{ r.total_units }}</td>
+          <td style="text-align:center;font-weight:700;font-size:.9rem;
+            {% if r.cgpa>=4.5 %}color:var(--success){% elif r.cgpa>=3.5 %}color:var(--info){% elif r.cgpa>=2.4 %}color:var(--warning){% else %}color:var(--danger){% endif %}">
+            {{ "%.2f"|format(r.cgpa) }}
+          </td>
+          <td style="font-size:.8rem;">{{ r.degree_class }}</td>
+          <td class="no-print">
+            {% set sid = student_map.get(r.matric_no) %}
+            {% if sid %}
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('admin.view_transcript', student_id=sid) }}" class="btn btn-outline btn-sm" title="View"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('admin.download_transcript', student_id=sid) }}" class="btn btn-success btn-sm" title="PDF"><i class="bi bi-file-earmark-pdf"></i></a>
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center;padding:4rem 2rem;">
+  <i class="bi bi-inbox" style="font-size:2.5rem;color:var(--n400);display:block;margin-bottom:1rem;"></i>
+  <h5 style="color:var(--g700);font-family:'Playfair Display',serif;">No Results Yet</h5>
+  <p style="color:var(--n500);font-size:.83rem;max-width:400px;margin:0 auto;">
+    No scores have been entered yet. Ask lecturers to enter scores, then return here to review before publishing.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

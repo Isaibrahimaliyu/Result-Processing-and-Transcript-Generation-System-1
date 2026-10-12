@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Spillover Students{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link active"><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <h4 class="page-title">Spillover Student Management</h4>
+        <p class="page-subtitle">Students who have exceeded the standard 4-year graduation period</p>
+      </div>
+    </div>
+    <button onclick="openModal('markSpilloverModal')" class="btn btn-gold btn-sm no-print">
+      <i class="bi bi-plus-lg"></i> Mark Student as Spillover
+    </button>
+  </div>
+</div>
+
+<!-- What is spillover -->
+<div class="spillover-info mb-4">
+  <i class="bi bi-info-circle-fill" style="flex-shrink:0;font-size:1rem;"></i>
+  <div>
+    <strong>What is Spillover?</strong> A student becomes a spillover when they fail to complete
+    their programme within the approved duration (4 years for B.Sc.). Reasons include:
+    carry-over courses, missing exams, academic suspension, or insufficient credit units.
+    Spillover students must register for and complete outstanding courses before graduation clearance.
+  </div>
+</div>
+
+<!-- Stats -->
+{% set active   = spillovers|selectattr('is_cleared','eq',false)|list %}
+{% set cleared  = spillovers|selectattr('is_cleared','eq',true)|list %}
+<div class="stats-grid">
+  <div class="stat-card" style="border-bottom:3px solid #E65100;">
+    <div class="stat-icon" style="background:#FFF3E0;color:#E65100;"><i class="bi bi-hourglass-split"></i></div>
+    <div class="stat-value" style="color:#E65100;">{{ active|length }}</div>
+    <div class="stat-label">Active Spillover</div>
+  </div>
+  <div class="stat-card accent-green">
+    <div class="stat-icon si-green"><i class="bi bi-check-circle-fill"></i></div>
+    <div class="stat-value" style="color:var(--success);">{{ cleared|length }}</div>
+    <div class="stat-label">Cleared / Graduated</div>
+  </div>
+  <div class="stat-card accent-navy">
+    <div class="stat-icon si-navy"><i class="bi bi-people"></i></div>
+    <div class="stat-value">{{ auto_candidates|length }}</div>
+    <div class="stat-label">Auto-Detected (unregistered)</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-icon si-blue"><i class="bi bi-journal-text"></i></div>
+    <div class="stat-value">{{ spillovers|length }}</div>
+    <div class="stat-label">Total Records</div>
+  </div>
+</div>
+
+<!-- Auto-detected candidates -->
+{% if auto_candidates %}
+<div class="card mb-4" style="border:1.5px solid #FFE082;">
+  <div class="card-header" style="background:#FFF8E1;color:#7B5800;border-bottom:1px solid #FFE082;">
+    <span><i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Auto-Detected Spillover Candidates ({{ auto_candidates|length }})
+    </span>
+    <span style="font-size:.75rem;">These students' entry year + 4 years has passed — not yet formally marked.</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead><tr><th>Matric No</th><th>Full Name</th><th>Level</th><th>Entry Year</th><th>Expected Grad.</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for s in auto_candidates %}
+        <tr>
+          <td><strong>{{ s.matric_no }}</strong></td>
+          <td>{{ s.full_name }}</td>
+          <td><span class="badge badge-navy">{{ s.level }}</span></td>
+          <td>{{ s.entry_year }}</td>
+          <td style="color:var(--danger);font-weight:700;">{{ s.entry_year + 4 }} (overdue)</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.mark_spillover', student_id=s.id) }}"
+                  onsubmit="return confirmAction('Mark {{ s.matric_no }} as spillover?')">
+              <input type="hidden" name="reason" value="Exceeded 4-year graduation period (auto-detected).">
+              <input type="hidden" name="extra_sessions" value="2">
+              <button type="submit" class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1.5px solid #FFCC02;">
+                <i class="bi bi-hourglass"></i> Mark Spillover
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Active spillover records -->
+<div class="card mb-4">
+  <div class="card-header ch-primary">
+    <span><i class="bi bi-list-check me-2"></i>Active Spillover Records</span>
+    <span class="badge badge-gold">{{ active|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if active %}
+    <table class="portal-table">
+      <thead><tr><th>Matric No</th><th>Student Name</th><th>Level</th><th>Reason</th><th>Outstanding Courses</th><th style="text-align:center">Extra Semesters</th><th>Marked On</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for sp in active %}
+        <tr>
+          <td><strong>{{ sp.student.matric_no }}</strong></td>
+          <td>{{ sp.student.full_name }}</td>
+          <td><span class="badge badge-navy">{{ sp.student.level }}</span></td>
+          <td style="font-size:.78rem;color:var(--n500);max-width:200px;">{{ sp.reason or '—' }}</td>
+          <td style="font-size:.78rem;">
+            {% if sp.outstanding_courses %}
+              {% for code in sp.outstanding_courses.split(',') %}
+              <span class="badge badge-warning" style="margin:1px;">{{ code.strip() }}</span>
+              {% endfor %}
+            {% else %}—{% endif %}
+          </td>
+          <td style="text-align:center;"><span class="badge badge-neutral">{{ sp.extra_sessions }}</span></td>
+          <td style="font-size:.76rem;color:var(--n500);">{{ sp.marked_at.strftime('%d/%m/%Y') }}</td>
+          <td>
+            <button onclick="openClearModal({{ sp.student_id }}, '{{ sp.student.matric_no }}')"
+                    class="btn btn-success btn-sm">
+              <i class="bi bi-check-circle"></i> Clear / Graduate
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:2.5rem;color:var(--n500);">
+      <i class="bi bi-check-circle" style="font-size:2rem;display:block;margin-bottom:.75rem;color:var(--success);"></i>
+      No active spillover students. All students are within their graduation period.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Cleared records -->
+{% if cleared %}
+<div class="card">
+  <div class="card-header ch-surface">
+    <span><i class="bi bi-archive me-2"></i>Cleared Records (Graduated)</span>
+    <span class="badge badge-success">{{ cleared|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead><tr><th>Matric No</th><th>Student Name</th><th>Marked</th><th>Cleared</th><th>Note</th></tr></thead>
+      <tbody>
+        {% for sp in cleared %}
+        <tr>
+          <td><strong>{{ sp.student.matric_no }}</strong></td>
+          <td>{{ sp.student.full_name }}</td>
+          <td style="font-size:.76rem;color:var(--n500);">{{ sp.marked_at.strftime('%d/%m/%Y') }}</td>
+          <td style="font-size:.76rem;color:var(--success);">{{ sp.cleared_at.strftime('%d/%m/%Y') if sp.cleared_at else '—' }}</td>
+          <td style="font-size:.76rem;color:var(--n500);">{{ sp.note or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Mark Spillover Modal -->
+<div class="modal-overlay" id="markSpilloverModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-title"><i class="bi bi-hourglass-split"></i> Mark Student as Spillover</div>
+    <form method="POST" id="markSpilloverForm" action="">
+      <div class="form-group">
+        <label class="form-label">Select Student <span class="req">*</span></label>
+        <select name="student_id" id="spilloverStudentSelect" class="form-select" required
+                onchange="updateSpilloverForm(this.value)">
+          <option value="">— Select Student —</option>
+          {% for s in auto_candidates %}
+          <option value="{{ s.id }}" data-matric="{{ s.matric_no }}" data-name="{{ s.full_name }}">
+            {{ s.matric_no }} — {{ s.full_name }}
+          </option>
+          {% endfor %}
+          <optgroup label="Other Students">
+          {% for s in spillovers|map(attribute='student')|list %}{% endfor %}
+          </optgroup>
+        </select>
+        <p style="font-size:.72rem;color:var(--n500);margin-top:.3rem;">
+          Or type a matric number directly below if not listed:
+        </p>
+        <input type="text" name="manual_matric" class="form-control mt-1"
+               placeholder="e.g. U19/FNS/CSC/001 (leave blank if selected above)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason for Spillover <span class="req">*</span></label>
+        <textarea name="reason" class="form-control" rows="2" required
+                  placeholder="e.g. Failed CSC401 and CSC402 — carry-over from 400L"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Outstanding Courses (comma-separated)</label>
+        <input type="text" name="outstanding_courses" class="form-control"
+               placeholder="e.g. CSC401, CSC402, MTH401">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Extra Semesters Approved</label>
+        <select name="extra_sessions" class="form-select">
+          <option value="1">1 Semester</option>
+          <option value="2" selected>2 Semesters (1 year)</option>
+          <option value="4">4 Semesters (2 years)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Additional Note</label>
+        <input type="text" name="note" class="form-control" placeholder="Optional note for records">
+      </div>
+      <div class="alert alert-warning" style="font-size:.78rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>This will flag the student in the system. Their transcript will show
+             a spillover notice. The student must complete outstanding requirements
+             before clearance.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('markSpilloverModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Mark as Spillover</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Clear Spillover Modal -->
+<div class="modal-overlay" id="clearSpilloverModal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-title"><i class="bi bi-check-circle"></i> Clear Spillover — Student Graduated</div>
+    <p style="font-size:.83rem;color:var(--n500);margin-bottom:1rem;">
+      Confirm that <strong id="clearStudentName"></strong> has completed all outstanding
+      requirements and is cleared for graduation.
+    </p>
+    <form method="POST" id="clearSpilloverForm" action="">
+      <div class="form-group">
+        <label class="form-label">Clearance Note</label>
+        <input type="text" name="note" class="form-control"
+               placeholder="e.g. All carry-over courses passed — Senate approved graduation">
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('clearSpilloverModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Confirm Clearance</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateSpilloverForm(studentId) {
+  if (studentId) {
+    document.getElementById('markSpilloverForm').action = `/admin/spillover/mark/${studentId}`;
+  }
+}
+function openClearModal(studentId, matricNo) {
+  document.getElementById('clearStudentName').textContent = matricNo;
+  document.getElementById('clearSpilloverForm').action = `/admin/spillover/clear/${studentId}`;
+  openModal('clearSpilloverModal');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Academic Sessions{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link active"><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-calendar3"></i></div>
+      <div>
+        <h4 class="page-title">Academic Session Management</h4>
+        <p class="page-subtitle">Set the active session and control course registration periods</p>
+      </div>
+    </div>
+    <button onclick="openModal('addSessionModal')" class="btn btn-gold btn-sm">
+      <i class="bi bi-plus-lg"></i> Add Session
+    </button>
+  </div>
+</div>
+
+<div class="alert alert-info mb-3">
+  <i class="bi bi-info-circle-fill"></i>
+  <div>Only one session can be active at a time. The active session determines which courses students can register for. 
+  When registration is <strong>Open</strong>, students can add and drop courses. When <strong>Closed</strong>, no changes are allowed.</div>
+</div>
+
+<div class="card">
+  <div class="card-header ch-primary"><span><i class="bi bi-calendar-range me-2"></i>All Academic Sessions</span></div>
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>Session Year</th><th>Semester</th><th style="text-align:center">Status</th>
+            <th style="text-align:center">Registration</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td><strong>{{ s.session_year }}</strong></td>
+          <td>{{ s.semester }} Semester</td>
+          <td style="text-align:center;">
+            {% if s.is_current %}
+            <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> ACTIVE</span>
+            {% else %}
+            <span class="badge badge-neutral">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if s.registration_open %}
+            <span class="badge badge-info"><i class="bi bi-unlock-fill"></i> Open</span>
+            {% else %}
+            <span class="badge badge-warning"><i class="bi bi-lock-fill"></i> Closed</span>
+            {% endif %}
+          </td>
+          <td><span style="font-size:.77rem;color:var(--n500);">{{ s.created_at.strftime('%d/%m/%Y') }}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              {% if not s.is_current %}
+              <form method="POST" action="{{ url_for('admin.activate_session', sess_id=s.id) }}"
+                    onsubmit="return confirmAction('Set {{ s.session_year }} {{ s.semester }} as the active session?')">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check2-circle"></i> Set Active</button>
+              </form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('admin.toggle_registration', sess_id=s.id) }}">
+                <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if s.registration_open else 'btn-success' }}">
+                  {% if s.registration_open %}<i class="bi bi-lock"></i> Close Reg{% else %}<i class="bi bi-unlock"></i> Open Reg{% endif %}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--n500);padding:2rem;">No sessions created yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Session Modal -->
+<div class="modal-overlay" id="addSessionModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title"><i class="bi bi-calendar-plus"></i> Add Academic Session</div>
+    <form method="POST" action="{{ url_for('admin.add_session') }}">
+      <div class="form-group">
+        <label class="form-label">Session Year <span class="req">*</span></label>
+        <input type="text" name="session_year" class="form-control" placeholder="e.g. 2024/2025" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Semester <span class="req">*</span></label>
+        <select name="semester" class="form-select" required>
+          <option value="">— Select —</option>
+          <option value="First">First Semester</option>
+          <option value="Second">Second Semester</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addSessionModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Add Session</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

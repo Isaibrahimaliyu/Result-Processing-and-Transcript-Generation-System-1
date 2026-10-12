@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link active"><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="page-header-icon"><i class="bi bi-journal-text"></i></div>
+      <div>
+        <h4 class="page-title">System Audit Log</h4>
+        <p class="page-subtitle">Tamper-evident record of all system actions</p>
+      </div>
+    </div>
+    <form method="GET" action="{{ url_for('admin.audit_log') }}" class="d-flex gap-2 no-print">
+      <select name="action" class="form-select" style="width:180px;" onchange="this.form.submit()">
+        <option value="">All Actions</option>
+        {% for a in distinct_actions %}
+        <option value="{{ a }}" {{ 'selected' if action_filter == a }}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="portal-table">
+      <thead>
+        <tr><th>#</th><th>Date &amp; Time</th><th>User</th><th>Action</th><th>Table</th><th>Old Value</th><th>New Value</th><th>IP Address</th></tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr class="searchable-row">
+          <td style="color:var(--n400);font-size:.74rem;">{{ ((pagination.page - 1) * pagination.per_page) + loop.index }}</td>
+          <td style="font-size:.75rem;white-space:nowrap;color:var(--n500);">{{ log.logged_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+          <td><strong style="font-size:.8rem;">{{ log.user.username if log.user else '—' }}</strong></td>
+          <td>
+            {% set bc = 'badge-success' if 'ADD' in log.action or 'ENTRY' in log.action or 'IMPORT' in log.action or 'PUBLISHED' == log.action
+               else ('badge-danger' if 'DELETE' in log.action or 'DEACTIVATE' in log.action or 'UNPUBLISHED' in log.action
+               else ('badge-warning' if 'EDIT' in log.action or 'UPDATE' in log.action or 'RESET' in log.action or 'TOGGLE' in log.action
+               else 'badge-info')) %}
+            <span class="badge {{ bc }}" style="font-size:.69rem;">{{ log.action }}</span>
+          </td>
+          <td style="font-size:.77rem;color:var(--n500);">{{ log.table_name or '—' }}</td>
+          <td style="font-size:.76rem;color:var(--danger);">
+            {% if log.old_value %}{{ log.old_value[:35] }}{% if log.old_value|length > 35 %}…{% endif %}{% else %}—{% endif %}
+          </td>
+          <td style="font-size:.76rem;color:var(--success);">
+            {% if log.new_value %}{{ log.new_value[:35] }}{% if log.new_value|length > 35 %}…{% endif %}{% else %}—{% endif %}
+          </td>
+          <td style="font-size:.74rem;color:var(--n400);">{{ log.ip_address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;color:var(--n500);padding:2rem;">No audit records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% with endpoint='admin.audit_log', extra_args={'action': action_filter} %}
+    {% include "_pagination.html" %}
+  {% endwith %}
+</div>
+{% endblock %}

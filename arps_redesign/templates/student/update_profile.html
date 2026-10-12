@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Update Profile{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Student Portal</div>
+<a href="{{ url_for('student.dashboard') }}"        class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="{{ url_for('student.results') }}"          class="sidebar-link "><i class="bi bi-bar-chart-line"></i> Academic Records</a>
+<a href="{{ url_for('student.my_courses') }}"       class="sidebar-link "><i class="bi bi-book"></i> My Courses</a>
+<a href="{{ url_for('student.register_courses') }}" class="sidebar-link "><i class="bi bi-pencil-square"></i> Register Courses</a>
+<a href="{{ url_for('student.statement') }}"        class="sidebar-link "><i class="bi bi-file-earmark-text"></i> Statement of Results</a>
+<a href="{{ url_for('student.predict_cgpa') }}"     class="sidebar-link "><i class="bi bi-graph-up-arrow"></i> CGPA Predictor</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('student.update_profile') }}"   class="sidebar-link active"><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('student.change_password') }}"  class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-person-gear"></i></div>
+      <div>
+        <h4 class="page-title">My Profile</h4>
+        <p class="page-subtitle">Update your contact details to receive result notifications</p>
+      </div>
+    </div>
+  </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+  <!-- Profile form -->
+  <div class="card">
+    <div class="card-header ch-primary"><i class="bi bi-person-fill me-2"></i>Contact Information</div>
+    <div class="card-body">
+
+      <!-- Read-only info -->
+      <div style="background:var(--surface);border-radius:var(--r-sm);padding:.85rem 1rem;margin-bottom:1.25rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+          {% for lbl, val in [
+            ('Full Name', student.full_name),
+            ('Matric No', student.matric_no),
+            ('Department', student.department),
+            ('Level', student.level ~ ' Level'),
+          ] %}
+          <div>
+            <div style="font-size:.68rem;color:var(--n500);font-weight:600;text-transform:uppercase;letter-spacing:.4px;">{{ lbl }}</div>
+            <div style="font-size:.83rem;font-weight:600;color:var(--g700);">{{ val }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+              <form method="POST" action="{{ url_for('student.update_profile') }}" enctype="multipart/form-data">
+          <div class="form-group">
+            <label class="form-label">
+              Passport Photograph
+              <span style="font-weight:400;color:var(--n500)">(shown on your official transcript)</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:1rem;">
+              <div style="width:70px;height:90px;border-radius:6px;overflow:hidden;border:1.5px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                {% if student.passport_photo %}
+                <img id="photoPreview" src="{{ url_for('static', filename='uploads/passports/' ~ student.passport_photo) }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                <img id="photoPreview" src="" style="width:100%;height:100%;object-fit:cover;display:none;">
+                <i id="photoPlaceholder" class="bi bi-person" style="font-size:1.8rem;color:var(--n400);"></i>
+                {% endif %}
+              </div>
+              <div style="flex:1;">
+                <input type="file" name="passport_photo" id="passportPhotoInput" accept="image/png,image/jpeg,image/webp"
+                       class="form-control" onchange="previewPassportPhoto(this)">
+                <p style="font-size:.72rem;color:var(--n500);margin-top:.3rem;">
+                  JPG, PNG, or WEBP — under 3 MB. Will be cropped to a standard passport size.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              Email Address
+              <span style="font-weight:400;color:var(--n500)">(for result notifications)</span>
+            </label>
+            <div class="input-group">
+              <span class="input-addon"><i class="bi bi-envelope"></i></span>
+              <input type="email" name="email" class="form-control"
+                     value="{{ student.email or '' }}"
+                     placeholder="e.g. yourname@gmail.com">
+            </div>
+            <p style="font-size:.72rem;color:var(--n500);margin-top:.3rem;">
+              Result release notifications will be sent to this address.
+            </p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              Phone Number
+              <span style="font-weight:400;color:var(--n500)">(optional)</span>
+            </label>
+            <div class="input-group">
+              <span class="input-addon"><i class="bi bi-telephone"></i></span>
+              <input type="tel" name="phone" class="form-control"
+                     value="{{ student.phone or '' }}"
+                     placeholder="e.g. 08012345678">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <div class="form-group">
+              <label class="form-label">Entry Year <span style="font-weight:400;color:var(--n500)">(year admitted)</span></label>
+              <div class="input-group">
+                <span class="input-addon"><i class="bi bi-calendar3"></i></span>
+                <input type="number" name="entry_year" class="form-control"
+                       value="{{ student.entry_year or '' }}"
+                       min="2000" max="2099" placeholder="e.g. 2022">
+              </div>
+              <p style="font-size:.72rem;color:var(--n500);margin-top:.25rem;">Shown on your official transcript.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" name="date_of_birth" class="form-control"
+                     value="{{ student.date_of_birth.isoformat() if student.date_of_birth else '' }}">
+              <p style="font-size:.72rem;color:var(--n500);margin-top:.25rem;">Printed on official transcripts.</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sex</label>
+            <select name="gender" class="form-select">
+              <option value="">— Not specified —</option>
+              <option value="M" {{ 'selected' if student.gender == 'M' }}>Male</option>
+              <option value="F" {{ 'selected' if student.gender == 'F' }}>Female</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" style="justify-content:center;">
+            <i class="bi bi-save"></i> Save Profile
+          </button>
+        </form>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div>
+    <div class="card mb-3" style="border-top:3px solid var(--g300);">
+      <div class="card-body" style="padding:1.25rem;">
+        <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem;">
+          <div style="width:36px;height:36px;background:var(--g100);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bell-fill" style="color:var(--g300);"></i>
+          </div>
+          <div style="font-weight:700;font-size:.9rem;color:var(--g700);">Why Add Your Email?</div>
+        </div>
+        <ul style="font-size:.8rem;color:var(--n500);padding-left:1.1rem;margin:0;line-height:2;">
+          <li>Get instantly notified when your results are released</li>
+          <li>Receive your semester GPA summary directly in your inbox</li>
+          <li>Never miss a result — even when you're off campus</li>
+          <li>Emails come from IBB University's official ARPTGS system</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Current notification status -->
+    <div class="card">
+      <div class="card-header ch-surface"><i class="bi bi-info-circle me-2"></i>Notification Status</div>
+      <div class="card-body">
+        {% if student.email %}
+        <div class="alert alert-success" style="font-size:.8rem;">
+          <i class="bi bi-check-circle-fill"></i>
+          <div>
+            <strong>Notifications Active</strong><br>
+            Emails will be sent to: <strong>{{ student.email }}</strong>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning" style="font-size:.8rem;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>
+            <strong>No Email Set</strong><br>
+            You will not receive result notifications until you add an email address above.
+          </div>
+        </div>
+        {% endif %}
+
+        {% if student.phone %}
+        <div style="font-size:.78rem;color:var(--n500);margin-top:.75rem;">
+          <i class="bi bi-telephone me-1"></i> Phone on file: <strong>{{ student.phone }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewPassportPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('photoPreview');
+    var placeholder = document.getElementById('photoPlaceholder');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

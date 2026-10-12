@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block sidebar %}
+<div class="sidebar-label">Exam Officer</div>
+<a href="{{ url_for('admin.dashboard') }}"           class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Manage</div>
+<a href="{{ url_for('admin.students') }}"            class="sidebar-link "><i class="bi bi-people"></i> Students</a>
+<a href="{{ url_for('admin.courses') }}"             class="sidebar-link "><i class="bi bi-book"></i> Course Directory</a>
+<a href="{{ url_for('admin.sessions') }}"            class="sidebar-link "><i class="bi bi-calendar3"></i> Academic Sessions</a>
+<a href="{{ url_for('admin.registrations') }}"       class="sidebar-link "><i class="bi bi-journal-plus"></i> Registrations</a>
+<a href="{{ url_for('admin.bulk_students') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Import Students</a>
+<a href="{{ url_for('admin.spillover') }}"           class="sidebar-link "><i class="bi bi-hourglass-split"></i> Spillover</a>
+<a href="{{ url_for('admin.graduating_students') }}" class="sidebar-link "><i class="bi bi-mortarboard"></i> Graduating Students</a>
+<div class="sidebar-label">Processing</div>
+<a href="{{ url_for('admin.publications') }}"        class="sidebar-link "><i class="bi bi-megaphone"></i> Result Publication</a>
+<a href="{{ url_for('admin.compute') }}"             class="sidebar-link "><i class="bi bi-cpu"></i> Computation Engine</a>
+<div class="sidebar-label">Notifications</div>
+<a href="{{ url_for('admin.notifications') }}"       class="sidebar-link "><i class="bi bi-envelope"></i> Email Notifications</a>
+<div class="sidebar-label">Verification</div>
+<a href="{{ url_for('admin.tokens') }}"              class="sidebar-link "><i class="bi bi-qr-code"></i> QR Tokens</a>
+<div class="sidebar-label">System</div>
+<a href="{{ url_for('admin.backup_page') }}"         class="sidebar-link "><i class="bi bi-database"></i> Backup & Restore</a>
+<div class="sidebar-label">Records</div>
+<a href="{{ url_for('admin.audit_log') }}"           class="sidebar-link "><i class="bi bi-journal-text"></i> Audit Log</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('admin.admin_profile') }}"       class="sidebar-link active"><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('admin.admin_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-header-icon"><i class="bi bi-person-gear"></i></div>
+    <div>
+      <h4 class="page-title">My Profile</h4>
+      <p class="page-subtitle">Update your Exam Officer account details</p>
+    </div>
+  </div>
+</div>
+<div style="max-width:560px;">
+  <div class="card">
+    <div class="card-header ch-primary"><i class="bi bi-person-fill me-2"></i>Account Information</div>
+    <div class="card-body">
+      <!-- Read-only info -->
+      <div style="background:var(--surface-2);border-radius:var(--r);padding:.9rem 1rem;margin-bottom:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:.65rem;">
+        {% for lbl, val in [('Staff ID', current_user.username), ('Role', 'Exam Officer')] %}
+        <div>
+          <div style="font-size:.67rem;color:var(--tx-faint);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">{{ lbl }}</div>
+          <div style="font-size:.88rem;font-weight:600;color:var(--tx-primary);margin-top:2px;">{{ val }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <form method="POST" action="{{ url_for('admin.admin_profile') }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">First Name <span class="req">*</span></label>
+            <input type="text" name="first_name" class="form-control" value="{{ lecturer.first_name }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name <span class="req">*</span></label>
+            <input type="text" name="last_name" class="form-control" value="{{ lecturer.last_name }}" required>
+          </div>
+        </div>
+        {% if lecturer.email is defined %}
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-group">
+            <span class="input-addon"><i class="bi bi-envelope"></i></span>
+            <input type="email" name="email" class="form-control" value="{{ lecturer.email or '' }}" placeholder="admin@ibbul.edu.ng">
+          </div>
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:.65rem;margin-top:.5rem;">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Changes</button>
+          <a href="{{ url_for('admin.admin_change_password') }}" class="btn btn-outline"><i class="bi bi-key"></i> Change Password</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

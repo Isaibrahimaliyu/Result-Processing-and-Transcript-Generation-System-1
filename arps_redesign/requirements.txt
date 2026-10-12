@@ -1,0 +1,20 @@
+# ARPS v2 — Requirements
+# Install: pip install -r requirements.txt
+
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-Bcrypt==1.0.1
+Flask-Migrate==4.0.7
+PyMySQL==1.1.1
+reportlab==4.2.2
+cryptography==42.0.8
+python-dotenv==1.0.1
+Werkzeug==3.0.3
+
+# QR Code generation (NEW — required for transcript verification)
+qrcode[pil]==7.4.2
+Pillow==10.3.0
+
+# Email notifications (NEW)
+Flask-Mail==0.9.1

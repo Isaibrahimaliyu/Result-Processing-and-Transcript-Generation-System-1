@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Automated Result Processing &amp; Transcript Generation System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/arps.css') }}" rel="stylesheet">
+  <script>(function(){var t=localStorage.getItem('arps-theme')||'light';document.documentElement.setAttribute('data-theme',t)})();</script>
+</head>
+<body>
+
+<script src="{{ url_for('static', filename='js/arps.js') }}"></script>
+
+<!-- Flash toasts (for errors) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="flash-container">
+    {% for cat, msg in messages %}
+    <div class="flash-toast toast-{{ cat }}">
+      <i class="bi bi-{% if cat=='success' %}check-circle-fill{% elif cat=='danger' %}x-circle-fill{% else %}info-circle-fill{% endif %} toast-icon"
+         style="color:var(--{% if cat=='success' %}success{% elif cat=='danger' %}danger{% else %}info{% endif %})"></i>
+      <span>{{ msg }}</span>
+      <button class="toast-close"><i class="bi bi-x"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Unobtrusive dark mode toggle, floating top-right -->
+<button id="darkToggle" type="button"
+        style="position:fixed;top:1.25rem;right:1.25rem;z-index:50;width:38px;height:38px;border-radius:50%;
+               background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);
+               display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:1rem;">
+  <i class="bi bi-moon-fill" id="darkIcon"></i>
+</button>
+
+<div class="auth-wrap">
+
+  <!-- ── Hero branding (left side, over the full-bleed background) ── -->
+  <div class="auth-hero">
+    <div class="auth-hero-crest">
+      <img src="{{ url_for('static', filename='img/ibbul_logo.png') }}" alt="IBBU Crest">
+    </div>
+    <div class="auth-hero-title">Ibrahim Badamasi<br>Babangida University</div>
+    <div class="auth-hero-role">STAFF &amp; STUDENT PORTAL</div>
+    <div class="auth-hero-cta">SIGN IN</div>
+  </div>
+
+  <!-- ── Login card (right side, floating) ─────────────────────── -->
+  <div class="auth-panel-right">
+    <div class="auth-card">
+
+      <div class="auth-title">ARPTGS</div>
+      <div class="auth-subtitle" style="margin-bottom:.15rem;">Automated Result Processing &amp; Transcript Generation System</div>
+      <div class="auth-subtitle">Welcome, Please Login</div>
+
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        <div class="auth-field">
+          <label for="username">Matric No. / Staff ID</label>
+          <div class="auth-input-wrap">
+            <input type="text" name="username" id="username" class="auth-input"
+                   placeholder="e.g. U22/FNS/CSC/001 or STAFF-001" required autofocus autocomplete="username">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="pw">Password</label>
+          <div class="auth-input-wrap">
+            <input type="password" name="password" id="pw" class="auth-input"
+                   placeholder="Enter your password" required autocomplete="current-password"
+                   style="padding-right:2.75rem;">
+            <button type="button" class="auth-input-toggle" onclick="togglePassword('pw','pw-ico')" aria-label="Toggle password">
+              <i class="bi bi-eye" id="pw-ico"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-submit">Login</button>
+      </form>
+
+      <div class="auth-forgot">
+        Forgot your password? <a href="{{ url_for('auth.forgot_password') }}">Get it Here</a>
+      </div>
+
+      <div style="text-align:center;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <span style="font-size:.78rem;color:var(--tx-muted);">Lecturer or Exam Officer?</span>
+        <a href="{{ url_for('auth.register') }}" style="font-size:.78rem;font-weight:600;color:var(--g600);margin-left:.4rem;">
+          Create an account <i class="bi bi-arrow-right" style="font-size:.72rem;"></i>
+        </a>
+      </div>
+
+    </div><!-- /auth-card -->
+  </div><!-- /auth-panel-right -->
+
+</div><!-- /auth-wrap -->
+
+</body>
+</html>

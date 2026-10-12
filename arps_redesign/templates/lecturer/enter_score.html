@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Enter Score — {{ course.course_code }}{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-label">Lecturer Portal</div>
+<a href="{{ url_for('lecturer.dashboard') }}"         class="sidebar-link "><i class="bi bi-speedometer2"></i> Dashboard</a>
+<div class="sidebar-label">Teaching</div>
+<a href="{{ url_for('lecturer.dashboard') }}"     class="sidebar-link active"><i class="bi bi-table"></i> Course Scores</a>
+<a href="{{ url_for('lecturer.dashboard') }}"       class="sidebar-link "><i class="bi bi-cloud-upload"></i> Bulk Upload</a>
+<div class="sidebar-label">Account</div>
+<a href="{{ url_for('lecturer.lecturer_profile') }}"  class="sidebar-link "><i class="bi bi-person-gear"></i> My Profile</a>
+<a href="{{ url_for('lecturer.lecturer_change_password') }}" class="sidebar-link "><i class="bi bi-key"></i> Change Password</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+      <div class="page-header-icon"><i class="bi bi-pencil-square"></i></div>
+      <div>
+        <h4 class="page-title">Input Student Scores</h4>
+        <p class="page-subtitle">{{ course.course_code }} &mdash; {{ course.course_title }} &mdash; {{ course.credit_unit }} unit(s)</p>
+      </div>
+    </div>
+  </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+  <div class="card">
+    <div class="card-header ch-primary"><i class="bi bi-input-cursor-text me-2"></i>Score Entry Form</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('lecturer.enter_score', course_id=course.id) }}">
+        <div class="form-group">
+          <label class="form-label">Session Year <span class="req">*</span></label>
+          <input type="text" name="session_year" class="form-control"
+                 value="{{ request.args.get('session','2023/2024') }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="req">*</span></label>
+          <select name="semester" class="form-select">
+            <option value="First"  {% if course.semester=='First'  %}selected{% endif %}>First Semester</option>
+            <option value="Second" {% if course.semester=='Second' %}selected{% endif %}>Second Semester</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Matric Number <span class="req">*</span></label>
+          <div class="input-group">
+            <span class="input-addon"><i class="bi bi-person-badge"></i></span>
+            <input type="text" name="matric_no" class="form-control"
+                   value="{{ request.args.get('edit','') }}"
+                   placeholder="e.g. U22/FNS/CSC/1290" required>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+          <div class="form-group">
+            <label class="form-label">CA Score <span style="font-weight:400;color:var(--n500)">(0–30)</span></label>
+            <input type="number" name="ca_score" id="ca_score" class="form-control"
+                   min="0" max="30" step="0.5" placeholder="0 – 30" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Exam Score <span style="font-weight:400;color:var(--n500)">(0–70)</span></label>
+            <input type="number" name="exam_score" id="exam_score" class="form-control"
+                   min="0" max="70" step="0.5" placeholder="0 – 70" required>
+          </div>
+        </div>
+        <div id="score_preview"></div>
+        <button type="submit" class="btn btn-primary w-100" style="justify-content:center;margin-top:.75rem;">
+          <i class="bi bi-save"></i> Save Score
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="card mb-3">
+      <div class="card-header ch-surface"><i class="bi bi-table me-2"></i>NUC Grading Scale</div>
+      <div class="card-body p-0">
+        <table class="portal-table">
+          <thead><tr><th>Range</th><th style="text-align:center">Grade</th><th style="text-align:center">GP</th><th>Class</th></tr></thead>
+          <tbody>
+            {% for rng,g,gp,cls in [('70–100','A','5.0','First Class'),('60–69','B','4.0','2nd Class Upper'),('50–59','C','3.0','2nd Class Lower'),('45–49','D','2.0','Third Class'),('40–44','E','1.0','Pass'),('0–39','F','0.0','Fail')] %}
+            <tr>
+              <td><strong>{{ rng }}</strong></td>
+              <td style="text-align:center;"><span class="grade-chip g-{{ g }}">{{ g }}</span></td>
+              <td style="text-align:center;font-weight:600;">{{ gp }}</td>
+              <td style="font-size:.78rem;color:var(--n500);">{{ cls }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="alert alert-info" style="font-size:.78rem;">
+      <i class="bi bi-lightbulb-fill"></i>
+      <div>For entering the entire class at once, use <a href="{{ url_for('lecturer.bulk_upload', course_id=course.id) }}" style="font-weight:700;">CSV Bulk Upload</a>. Prepare a CSV with columns: <code>matric_no, ca_score, exam_score</code>.</div>
+    </div>
+    <div class="alert alert-warning" style="font-size:.78rem;">
+      <i class="bi bi-shield-lock-fill"></i>
+      <div><strong>Note:</strong> Scores you enter are saved immediately but are <strong>not visible to students</strong> until the Examination Officer publishes results.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
