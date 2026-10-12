@@ -16,8 +16,8 @@ _scheduler_started = False
 
 
 def get_backup_dir() -> str:
-    base = os.path.dirname(os.path.abspath(__file__))
-    bdir = os.path.join(base, "backups")
+    from config import WRITABLE_DIR
+    bdir = os.path.join(WRITABLE_DIR, "backups")
     os.makedirs(bdir, exist_ok=True)
     return bdir
 

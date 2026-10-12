@@ -14,7 +14,7 @@ Werkzeug==3.0.3
 
 # QR Code generation (NEW — required for transcript verification)
 qrcode[pil]==7.4.2
-Pillow==10.3.0
+Pillow==10.4.0
 
 # Email notifications (NEW)
 Flask-Mail==0.9.1

@@ -178,7 +178,12 @@ def generate_transcript_pdf(student, cgpa_data: dict, token=None, base_url: str 
         logo_flowable = Spacer(2.1*cm, 2.1*cm)
 
     photo_flowable = None
-    if getattr(student, "passport_photo", None):
+    if getattr(student, "passport_photo_data", None):
+        try:
+            photo_flowable = RLImage(BytesIO(student.passport_photo_data), width=2.3*cm, height=2.7*cm)
+        except Exception:
+            photo_flowable = None
+    if photo_flowable is None and getattr(student, "passport_photo", None):
         photo_path = os.path.join(_UPLOADS_DIR, student.passport_photo)
         if os.path.exists(photo_path):
             try:

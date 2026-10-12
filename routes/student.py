@@ -344,11 +344,12 @@ def update_profile():
         # ── Passport photo upload ──────────────────────────────
         photo_file = request.files.get("passport_photo")
         if photo_file and photo_file.filename:
-            saved_name, error = _save_passport_photo(student, photo_file)
+            saved_name, photo_bytes, error = _save_passport_photo(student, photo_file)
             if error:
                 flash(error, "danger")
                 return redirect(request.url)
             student.passport_photo = saved_name
+            student.passport_photo_data = photo_bytes
 
         db.session.commit()
         flash("Profile updated successfully. You will receive result notifications at this email.", "success")
@@ -360,7 +361,9 @@ def update_profile():
 def _save_passport_photo(student, file_storage):
     """
     Validate and save an uploaded passport photo.
-    Returns (saved_filename, None) on success, or (None, error_message) on failure.
+    Returns (saved_filename, jpeg_bytes, None) on success, or (None, None, error_message) on failure.
+    The JPEG bytes are stored in the database; writing to static/uploads is best-effort
+    because serverless hosts (e.g. Vercel) have a read-only filesystem.
 
     Validates the upload is a genuine image (not just a renamed file), enforces
     a size limit, and normalises it to a standard passport photo size so every
@@ -375,15 +378,15 @@ def _save_passport_photo(student, file_storage):
     filename = file_storage.filename or ""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in ALLOWED_EXT:
-        return None, "Photo must be a JPG, PNG, or WEBP image."
+        return None, None, "Photo must be a JPG, PNG, or WEBP image."
 
     file_storage.stream.seek(0, os.SEEK_END)
     size = file_storage.stream.tell()
     file_storage.stream.seek(0)
     if size > MAX_BYTES:
-        return None, "Photo must be smaller than 3 MB."
+        return None, None, "Photo must be smaller than 3 MB."
     if size == 0:
-        return None, "That file appears to be empty."
+        return None, None, "That file appears to be empty."
 
     # Verify it's a genuine image, not just a file with an image-like extension
     try:
@@ -393,7 +396,7 @@ def _save_passport_photo(student, file_storage):
         img = PILImage.open(file_storage.stream)  # reopen after verify()
         img = img.convert("RGB")
     except (UnidentifiedImageError, OSError):
-        return None, "That file isn't a valid image. Please upload a JPG or PNG photo."
+        return None, None, "That file isn't a valid image. Please upload a JPG or PNG photo."
 
     # Center-crop to a standard passport aspect ratio (35mm x 45mm ≈ 0.777),
     # then resize to a consistent print resolution used on the transcript.
@@ -410,17 +413,37 @@ def _save_passport_photo(student, file_storage):
         img = img.crop((0, top, w, top + new_h))
     img = img.resize((413, 531))  # ~35x45mm at 300dpi
 
-    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static", "uploads", "passports")
-    upload_dir = os.path.abspath(upload_dir)
-    os.makedirs(upload_dir, exist_ok=True)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=88)
+    photo_bytes = buf.getvalue()
 
     # Deterministic filename tied to matric number — re-uploads simply overwrite
     # the previous photo instead of accumulating orphaned files.
     safe_matric = "".join(c if c.isalnum() else "_" for c in student.matric_no)
     saved_name = f"{safe_matric}.jpg"
-    img.save(os.path.join(upload_dir, saved_name), format="JPEG", quality=88)
 
-    return saved_name, None
+    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static", "uploads", "passports")
+    upload_dir = os.path.abspath(upload_dir)
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+        with open(os.path.join(upload_dir, saved_name), "wb") as f:
+            f.write(photo_bytes)
+    except OSError:
+        pass   # read-only filesystem — the database copy is used instead
+
+    return saved_name, photo_bytes, None
+
+
+@student_bp.route("/photo")
+@login_required
+@student_required
+def passport_photo():
+    """Serve the logged-in student's passport photo from the database."""
+    student = current_user.student_profile
+    if not student or not student.passport_photo_data:
+        return redirect(url_for("static", filename="uploads/passports/" + (student.passport_photo or "")))
+    return send_file(io.BytesIO(student.passport_photo_data), mimetype="image/jpeg",
+                     max_age=0)
 
 
 # ══════════════════════════════════════════════════════════════
