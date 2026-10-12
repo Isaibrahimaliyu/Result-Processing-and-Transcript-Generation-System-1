@@ -58,7 +58,7 @@
             <div style="display:flex;align-items:center;gap:1rem;">
               <div style="width:70px;height:90px;border-radius:6px;overflow:hidden;border:1.5px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 {% if student.passport_photo %}
-                <img id="photoPreview" src="{{ url_for('static', filename='uploads/passports/' ~ student.passport_photo) }}" style="width:100%;height:100%;object-fit:cover;">
+                <img id="photoPreview" src="{{ url_for('student.passport_photo') }}" style="width:100%;height:100%;object-fit:cover;">
                 {% else %}
                 <img id="photoPreview" src="" style="width:100%;height:100%;object-fit:cover;display:none;">
                 <i id="photoPlaceholder" class="bi bi-person" style="font-size:1.8rem;color:var(--n400);"></i>

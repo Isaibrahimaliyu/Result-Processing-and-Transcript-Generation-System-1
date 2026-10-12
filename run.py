@@ -44,6 +44,9 @@ def auto_migrate():
     """
     from sqlalchemy import text, inspect
     with app.app_context():
+        # Create any tables that don't exist yet (fresh database) — no-op otherwise
+        db.create_all()
+
         engine   = db.engine
         inspector = inspect(engine)
 
@@ -130,6 +133,25 @@ def auto_migrate():
                 conn.execute(text("ALTER TABLE students ADD COLUMN phone VARCHAR(20) NULL"))
                 conn.commit()
                 print("✅ Migration: added students.phone")
+            if "gender" not in student_cols:
+                conn.execute(text("ALTER TABLE students ADD COLUMN gender ENUM('M','F') NULL"))
+                conn.commit()
+                print("✅ Migration: added students.gender")
+            if "passport_photo" not in student_cols:
+                conn.execute(text("ALTER TABLE students ADD COLUMN passport_photo VARCHAR(255) NULL"))
+                conn.commit()
+                print("✅ Migration: added students.passport_photo")
+            if "passport_photo_data" not in student_cols:
+                conn.execute(text("ALTER TABLE students ADD COLUMN passport_photo_data MEDIUMBLOB NULL"))
+                conn.commit()
+                print("✅ Migration: added students.passport_photo_data")
+
+            # ── lecturers.email ───────────────────────────────
+            lecturer_cols = [c["name"] for c in inspector.get_columns("lecturers")]
+            if "email" not in lecturer_cols:
+                conn.execute(text("ALTER TABLE lecturers ADD COLUMN email VARCHAR(150) NULL"))
+                conn.commit()
+                print("✅ Migration: added lecturers.email")
 
             # ── email_notifications table ─────────────────────
             tables = inspector.get_table_names()

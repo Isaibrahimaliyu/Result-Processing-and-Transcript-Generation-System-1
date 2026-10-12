@@ -3,6 +3,7 @@ ARPS — Database Models  (v2 — with ResultPublication gate)
 """
 from datetime import datetime
 from flask_login import UserMixin
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from app import db, login_manager
 
 
@@ -74,6 +75,8 @@ class Student(db.Model):
     phone         = db.Column(db.String(20),  nullable=True)
     gender        = db.Column(db.Enum("M", "F"), nullable=True)
     passport_photo= db.Column(db.String(255), nullable=True)   # relative path under static/uploads/passports/
+    passport_photo_data = db.Column(db.LargeBinary().with_variant(MEDIUMBLOB(), "mysql"),
+                                    nullable=True)   # JPEG bytes — survives serverless/ephemeral disks
 
     user          = db.relationship("User",               back_populates="student_profile")
     registrations = db.relationship("CourseRegistration", back_populates="student", cascade="all, delete-orphan")

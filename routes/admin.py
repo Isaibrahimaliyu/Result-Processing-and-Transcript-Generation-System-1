@@ -14,6 +14,7 @@ from models import (User, Student, Lecturer, Course, CourseRegistration,
                     Score, AuditLog, AcademicSession, ResultPublication)
 from engine import compute_cgpa, bulk_compute_department_cgpa
 from cache_utils import cached, invalidate
+from backup_engine import get_backup_dir
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -1219,8 +1220,7 @@ def download_graduating_pdf():
 def backup_page():
     """Backup & Restore management page."""
     import os, glob
-    backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
-    os.makedirs(backup_dir, exist_ok=True)
+    backup_dir = get_backup_dir()
     files = []
     for f in sorted(glob.glob(os.path.join(backup_dir, "*.sql")), reverse=True)[:20]:
         stat  = os.stat(f)
@@ -1249,8 +1249,7 @@ def create_backup():
     db_pass   = os.environ.get("DB_PASSWORD", "")
     db_name   = os.environ.get("DB_NAME", "arps_db")
 
-    backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
-    os.makedirs(backup_dir, exist_ok=True)
+    backup_dir = get_backup_dir()
 
     ts       = dt.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"arps_backup_{ts}.sql"
@@ -1306,7 +1305,7 @@ def download_backup(filename):
         flash("Invalid backup file name.", "danger")
         return redirect(url_for("admin.backup_page"))
 
-    backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
+    backup_dir = get_backup_dir()
     log_action("DB_BACKUP_DOWNLOAD", "backup", new_value=filename)
     db.session.commit()
     return send_from_directory(backup_dir, filename, as_attachment=True)
@@ -1323,7 +1322,7 @@ def delete_backup(filename):
         flash("Invalid backup file name.", "danger")
         return redirect(url_for("admin.backup_page"))
 
-    backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
+    backup_dir = get_backup_dir()
     filepath   = os.path.join(backup_dir, filename)
 
     if os.path.exists(filepath):
@@ -1348,7 +1347,7 @@ def restore_backup(filename):
         flash("Invalid backup file name.", "danger")
         return redirect(url_for("admin.backup_page"))
 
-    backup_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "backups")
+    backup_dir = get_backup_dir()
     filepath   = os.path.join(backup_dir, filename)
 
     if not os.path.exists(filepath):

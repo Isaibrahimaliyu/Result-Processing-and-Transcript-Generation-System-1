@@ -26,11 +26,14 @@ except ImportError:
 
 
 def create_app(config_name: str = "default") -> Flask:
-    from config import config
+    from config import config, IS_SERVERLESS
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_object(config[config_name])
 
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    try:
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    except OSError:
+        pass   # read-only filesystem — uploads folder is optional
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -76,9 +79,10 @@ def create_app(config_name: str = "default") -> Flask:
     def server_error(e):
         return render_template("errors/500.html"), 500
 
-    # Start automatic daily backup scheduler (daemon thread)
+    # Start automatic daily backup scheduler (daemon thread).
+    # Skipped on serverless hosts: no long-lived process and no mysqldump there.
     global _backup_scheduler_registered
-    if _start_backup_scheduler and not _backup_scheduler_registered:
+    if _start_backup_scheduler and not _backup_scheduler_registered and not IS_SERVERLESS:
         _start_backup_scheduler()
         _backup_scheduler_registered = True
 
