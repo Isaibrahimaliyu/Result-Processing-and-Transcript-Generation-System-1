@@ -78,27 +78,6 @@
         Enter it below. The code expires in 15 minutes.
       </p>
 
-      <!-- Progress steps -->
-      <div style="display:flex;align-items:center;margin-bottom:1.75rem;">
-        {% for i, label in [(1,'Enter ID'),(2,'Verify OTP'),(3,'New Password')] %}
-        <div style="display:flex;align-items:center;flex:1;{% if not loop.last %}margin-right:.25rem;{% endif %}">
-          <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;
-            {% if i == 1 %}background:var(--success);color:#fff;
-            {% elif i == 2 %}background:var(--g700);color:#fff;
-            {% else %}background:var(--n100);color:var(--n400);{% endif %}">
-            {% if i == 1 %}<i class="bi bi-check" style="font-size:.75rem;"></i>{% else %}{{ i }}{% endif %}
-          </div>
-<<<<<<< HEAD
-          <span class="step-label" style="font-size:.68rem;font-weight:{% if i == 2 %}600{% else %}400{% endif %};
-=======
-          <span style="font-size:.68rem;font-weight:{% if i == 2 %}600{% else %}400{% endif %};
->>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
-                       color:{% if i == 2 %}var(--g700){% elif i == 1 %}var(--success){% else %}var(--n400){% endif %};
-                       margin-left:.3rem;white-space:nowrap;">{{ label }}</span>
-          {% if not loop.last %}<div style="flex:1;height:1px;background:{% if i == 1 %}var(--g300){% else %}var(--border){% endif %};margin:0 .4rem;"></div>{% endif %}
-        </div>
-        {% endfor %}
-      </div>
 
       <form method="POST" action="{{ url_for('auth.verify_otp') }}" id="otpForm">
         <!-- Hidden single field (filled by JS) -->
