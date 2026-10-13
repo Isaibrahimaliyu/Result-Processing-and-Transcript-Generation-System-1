@@ -2,7 +2,11 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
+<<<<<<< HEAD
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+=======
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
   <title>{% block title %}ARPTGS{% endblock %} | IBB University</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +28,14 @@
 
 <!-- ── TOPBAR ──────────────────────────────────────────────── -->
 <header class="topbar">
+<<<<<<< HEAD
+  <!-- Mobile menu button (shown on tablets/phones) -->
+  <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-controls="sidebarNav" aria-expanded="false">
+    <i class="bi bi-list"></i>
+  </button>
+
+=======
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
   <!-- Brand -->
   <a href="{{ url_for('auth.login') }}" class="topbar-brand">
     <div class="topbar-logo">
@@ -97,7 +109,12 @@
 
 <!-- ── LAYOUT ───────────────────────────────────────────────── -->
 <div class="portal-layout">
+<<<<<<< HEAD
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <nav class="sidebar" id="sidebarNav" role="navigation" aria-label="Main navigation">
+=======
   <nav class="sidebar" role="navigation" aria-label="Main navigation">
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
     {% block sidebar %}{% endblock %}
     <div class="sidebar-footer">ARPTGS v3.0 &mdash; IBB University &copy; 2026</div>
   </nav>

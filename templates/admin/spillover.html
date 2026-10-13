@@ -88,23 +88,44 @@
     <span><i class="bi bi-exclamation-triangle-fill me-2"></i>
       Auto-Detected Spillover Candidates ({{ auto_candidates|length }})
     </span>
+<<<<<<< HEAD
+    <span style="font-size:.75rem;">Past the 4-year programme or carrying failed courses — not yet formally marked.</span>
+=======
     <span style="font-size:.75rem;">These students' entry year + 4 years has passed — not yet formally marked.</span>
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
   </div>
   <div class="card-body p-0">
     <table class="portal-table">
       <thead><tr><th>Matric No</th><th>Full Name</th><th>Level</th><th>Entry Year</th><th>Expected Grad.</th><th>Action</th></tr></thead>
       <tbody>
+<<<<<<< HEAD
+        {% for cand in auto_candidates %}
+        {% set s = cand.student %}
+=======
         {% for s in auto_candidates %}
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
         <tr>
           <td><strong>{{ s.matric_no }}</strong></td>
           <td>{{ s.full_name }}</td>
           <td><span class="badge badge-navy">{{ s.level }}</span></td>
+<<<<<<< HEAD
+          <td>{{ s.entry_year or '—' }}</td>
+          <td style="{% if cand.is_time_overdue %}color:var(--danger);{% endif %}font-weight:700;">
+            {% if s.entry_year %}{{ s.entry_year + 4 }}{% else %}—{% endif %}{% if cand.is_time_overdue %} (overdue){% endif %}
+            {% if cand.outstanding_codes %}<div style="font-size:.7rem;font-weight:500;color:var(--tx-muted);">Failed: {{ cand.outstanding_codes }}</div>{% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.mark_spillover', student_id=s.id) }}"
+                  onsubmit="return confirmAction('Mark {{ s.matric_no }} as spillover?')">
+              <input type="hidden" name="reason" value="{{ cand.reasons|join(' ') }} (auto-detected)">
+=======
           <td>{{ s.entry_year }}</td>
           <td style="color:var(--danger);font-weight:700;">{{ s.entry_year + 4 }} (overdue)</td>
           <td>
             <form method="POST" action="{{ url_for('admin.mark_spillover', student_id=s.id) }}"
                   onsubmit="return confirmAction('Mark {{ s.matric_no }} as spillover?')">
               <input type="hidden" name="reason" value="Exceeded 4-year graduation period (auto-detected).">
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
               <input type="hidden" name="extra_sessions" value="2">
               <button type="submit" class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1.5px solid #FFCC02;">
                 <i class="bi bi-hourglass"></i> Mark Spillover

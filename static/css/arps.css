@@ -652,7 +652,11 @@ img{display:block;max-width:100%}
 .auth-feature-text{font-size:.77rem;color:rgba(255,255,255,.55);line-height:1.5}
 .auth-feature-text strong{color:rgba(255,255,255,.85);display:block;margin-bottom:1px;font-size:.79rem}
 .auth-copy{position:relative;z-index:1;margin-top:auto;padding-top:1.5rem;font-size:.65rem;color:rgba(255,255,255,.2)}
+<<<<<<< HEAD
+/* (mobile auth layout lives in the Responsive section at the end of this file) */
+=======
 @media(max-width:900px){.auth-hero{display:none}.auth-wrap{justify-content:center;padding:1.25rem}}
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
 
 /* Form fields matching the portal's green-accented style */
 .auth-field{margin-bottom:1.3rem}
@@ -801,3 +805,234 @@ img{display:block;max-width:100%}
 .pager-btn.active{background:var(--g600);border-color:var(--g600);color:#fff}
 .pager-btn.disabled{opacity:.4;pointer-events:none}
 .pager-ellipsis{color:var(--tx-muted);padding:0 .25rem;font-size:.8rem}
+<<<<<<< HEAD
+
+
+/* ================================================================
+   RESPONSIVE LAYER  (phones · tablets · laptops)
+   All rules are `screen`-only so printed transcripts are untouched.
+   Breakpoints: 1100 · 1024 (drawer nav) · 900 (auth) · 768 · 640 · 480 · 380
+   ================================================================ */
+
+/* Desktop defaults for the new elements */
+.nav-toggle{display:none}
+.sidebar-backdrop{display:none}
+.main-content{min-width:0}
+.table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-scroll > table{margin:0}
+img,video,canvas,svg{max-width:100%}
+
+/* ── Register page: left brand panel (was unstyled) ─────────── */
+.auth-panel-left{
+  position:relative;z-index:1;display:flex;flex-direction:column;
+  flex:1 1 0;min-width:0;max-width:520px;min-height:560px;
+  color:#fff;padding:1rem 0;
+}
+.auth-panel-left .glow{
+  position:absolute;width:420px;height:420px;border-radius:50%;
+  left:-120px;top:-60px;pointer-events:none;
+  background:radial-gradient(circle,rgba(0,168,91,.28),transparent 65%);
+}
+.auth-wrap:has(.auth-panel-left){justify-content:space-between;gap:3rem;padding-left:6vw;padding-right:6vw}
+.auth-wrap:has(.auth-panel-left) .auth-panel-right{flex:0 1 500px;width:100%}
+
+/* ── ≤1100px : trim the topbar ──────────────────────────────── */
+@media screen and (max-width:1100px){
+  .topbar-sep,.topbar-institution{display:none}
+}
+
+/* ── ≤1024px : sidebar becomes a slide-in drawer ────────────── */
+@media screen and (max-width:1024px){
+  .nav-toggle{
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:40px;height:40px;border-radius:10px;cursor:pointer;
+    background:var(--n50);border:1px solid var(--border);
+    color:var(--tx-primary);font-size:1.45rem;line-height:1;
+    transition:background var(--t),color var(--t);
+  }
+  .nav-toggle:hover{background:var(--g50);color:var(--g600)}
+  .topbar{padding:0 .85rem;gap:.65rem}
+
+  .portal-layout{display:block}
+  .sidebar{
+    position:fixed;top:var(--topbar-h);left:0;bottom:0;height:auto;
+    width:min(84vw,300px);z-index:195;
+    transform:translateX(-102%);visibility:hidden;
+    transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s linear .26s;
+    box-shadow:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding-bottom:calc(1.5rem + env(safe-area-inset-bottom));
+  }
+  .sidebar-link{padding:.7rem .85rem;font-size:.86rem}
+  body.sidebar-open .sidebar{
+    transform:none;visibility:visible;
+    transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s;
+    box-shadow:8px 0 32px rgba(0,0,0,.28);
+  }
+  .sidebar-backdrop{
+    display:block;position:fixed;inset:var(--topbar-h) 0 0 0;z-index:190;
+    background:rgba(5,15,7,.5);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .22s ease;
+  }
+  body.sidebar-open .sidebar-backdrop{opacity:1;pointer-events:auto}
+  body.sidebar-open{overflow:hidden}
+
+  .main-content{max-width:100%;width:100%;padding:1.25rem 1.1rem}
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ── ≤900px : auth pages — keep the crest, stack it over the card ── */
+@media screen and (max-width:900px){
+  .auth-wrap,
+  .auth-wrap:has(.auth-panel-left){
+    flex-direction:column;justify-content:flex-start;align-items:center;
+    gap:1.4rem;padding:1.25rem 1rem 2rem;
+  }
+  /* Login hero → compact centred header */
+  .auth-hero{
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+    position:static;transform:none;max-width:100%;width:100%;padding-top:2.25rem;
+  }
+  .auth-hero-crest{width:92px;height:92px;margin-bottom:1rem;padding:6px}
+  .auth-hero-title{font-size:1.35rem;margin-bottom:.7rem}
+  .auth-hero-role{font-size:.85rem}
+  .auth-hero-cta{font-size:.95rem}
+  .auth-panel-right,
+  .auth-wrap:has(.auth-panel-left) .auth-panel-right{
+    width:100%;flex:none;display:flex;justify-content:center;
+  }
+  .auth-card{max-width:480px}
+  /* Register brand panel → logo row only */
+  .auth-panel-left{
+    flex:none;width:100%;max-width:480px;min-height:0;padding:2.25rem 0 0;
+    align-items:center;text-align:center;
+  }
+  .auth-panel-left > :not(.auth-logo-row):not(.glow){display:none!important}
+  .auth-panel-left .auth-logo-row{
+    flex-direction:column;gap:.75rem;margin-bottom:0;text-align:center;
+  }
+  .auth-panel-left .auth-logo-badge{
+    width:88px;height:88px;border-radius:50%;background:#fff;padding:6px;
+    box-shadow:0 12px 40px rgba(0,0,0,.4);
+  }
+  .auth-panel-left .auth-logo-badge img{border-radius:50%}
+  .auth-panel-left .auth-uni-name{font-size:1.2rem;color:var(--gold);text-transform:uppercase}
+  .auth-panel-left .auth-uni-sub{color:rgba(255,255,255,.7)}
+}
+
+/* ── ≤768px : tablets / large phones ────────────────────────── */
+@media screen and (max-width:768px){
+  body{font-size:14px}
+  /* iOS zooms into inputs below 16px — prevent it */
+  input,select,textarea,.form-control,.form-select,.auth-input{font-size:16px!important}
+  .btn{min-height:38px}
+  .btn-sm{min-height:34px}
+
+  .main-content{padding:1rem .85rem}
+  .page-header{margin-bottom:1.1rem;padding-bottom:.85rem}
+  .page-title{font-size:1.08rem}
+  .card-body{padding:.9rem}
+  .card-header{flex-wrap:wrap}
+
+  .stats-grid{grid-template-columns:1fr 1fr;gap:.75rem}
+
+  /* Two-column page layouts written as inline grids → single column */
+  [style*="grid-template-columns:1fr 1fr"][style*="gap:1.5rem"],
+  [style*="grid-template-columns: 1fr 1fr"][style*="gap:1.5rem"]{
+    grid-template-columns:1fr!important;
+  }
+  /* 4-up stat strips → 2-up */
+  [style*="repeat(4,1fr)"],.tr-cgpa-grid,.cgpa-grid{grid-template-columns:repeat(2,1fr)!important}
+  .stats-grid[style*="repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}
+  .tr-sig-grid{grid-template-columns:1fr!important;gap:1.25rem!important}
+
+  /* Transcript / statement documents */
+  .tr-doc{padding:1.25rem}
+  .tr-bio{grid-template-columns:1fr!important}
+  .tr-uni{font-size:1.15rem}
+  .tr-watermark{font-size:2.6rem}
+  .cgpa-box{padding:1.1rem}
+  .cgpa-value{font-size:1.5rem}
+  .pred-grid{grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+  .pred-val{font-size:1.6rem}
+  .grade-selector{grid-template-columns:repeat(3,1fr)}
+
+  /* Modals: near full-width, scrollable */
+  .modal-overlay{padding:.75rem;align-items:flex-end}
+  .modal-box{padding:1.25rem;max-height:92vh;border-radius:var(--r-xl) var(--r-xl) var(--r) var(--r)}
+  .modal-footer{flex-wrap:wrap}
+  .modal-footer .btn{flex:1 1 auto;justify-content:center}
+
+  /* Pager */
+  .pager{justify-content:center;text-align:center}
+}
+
+/* ── ≤640px : phones ────────────────────────────────────────── */
+@media screen and (max-width:640px){
+  .topbar{gap:.5rem;padding:0 .65rem}
+  .topbar-wordmark small{display:none}
+  .topbar-logo{width:38px;height:38px}
+  .user-meta{display:none}
+  .topbar-user{padding:.25rem .3rem .25rem .25rem;gap:.4rem}
+  .session-pill{padding:.2rem .6rem;font-size:.66rem;max-width:34vw}
+  .session-pill span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .page-header{flex-direction:column;align-items:flex-start}
+  .page-header > .btn,.page-header > div:last-child:not(.page-header-left){width:100%}
+  .page-header-left{width:100%}
+
+  /* Filter bars: fixed-width inputs/selects fill the row */
+  .main-content input[style*="width:"],
+  .main-content select[style*="width:"]{width:100%!important;max-width:100%}
+  .main-content form[style*="display:flex"],
+  .main-content [style*="display:flex"]{flex-wrap:wrap}
+  .main-content form[style*="display:flex"] > *{min-width:0}
+  .main-content [style*="min-width:240px"]{min-width:0!important;flex:1 1 100%!important}
+
+  /* Side-by-side form fields → stacked */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}
+  [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}
+  /* …except tiny pairs that read better side by side (stat tiles, role tiles) */
+  .stats-grid,.cgpa-grid,.tr-cgpa-grid,[style*="repeat(3,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  [style*="repeat(3,1fr)"][style*="gap:.5rem"]{grid-template-columns:repeat(3,1fr)!important}
+
+  .stat-card{padding:.9rem}
+  .card-header{padding:.65rem .85rem}
+
+  /* Auth cards & single-card pages */
+  .auth-card{padding:1.75rem 1.35rem 1.5rem;border-radius:var(--r-lg)}
+  [style*="padding:2.25rem"],[style*="padding:2.5rem"]{padding:1.6rem 1.25rem!important}
+  .otp-row{gap:.4rem}
+  .otp-input{flex:1 1 0;min-width:0;max-width:52px;width:auto!important;height:52px!important;font-size:1.3rem!important}
+
+  .table-scroll > table{font-size:.78rem}
+  .portal-table th,.portal-table td{padding:.5rem .6rem}
+}
+
+/* ── ≤480px ─────────────────────────────────────────────────── */
+@media screen and (max-width:480px){
+  #flash-container{left:.65rem;right:.65rem;max-width:none;top:calc(var(--topbar-h) + .5rem)}
+  .auth-hero-crest{width:84px;height:84px}
+  .auth-hero-title{font-size:1.2rem}
+  .step-label{display:none}               /* password-reset stepper: keep the numbers only */
+  .main-content{padding:.85rem .7rem}
+  .page-title{font-size:1rem}
+  .cgpa-value,.pred-val{font-size:1.35rem}
+  .modal-box{padding:1.1rem}
+}
+
+/* ── ≤380px : very small phones ─────────────────────────────── */
+@media screen and (max-width:380px){
+  .stats-grid{grid-template-columns:1fr!important}
+  .topbar-wordmark{display:none}
+  .session-pill{display:none}
+  .pred-grid{grid-template-columns:1fr}
+}
+
+/* ── Short landscape phones: don't vertically-centre the auth card off-screen ── */
+@media screen and (max-height:520px) and (orientation:landscape){
+  .auth-wrap{align-items:flex-start}
+  .auth-hero{padding-top:1rem}
+}
+=======
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7

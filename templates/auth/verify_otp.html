@@ -88,7 +88,11 @@
             {% else %}background:var(--n100);color:var(--n400);{% endif %}">
             {% if i == 1 %}<i class="bi bi-check" style="font-size:.75rem;"></i>{% else %}{{ i }}{% endif %}
           </div>
+<<<<<<< HEAD
+          <span class="step-label" style="font-size:.68rem;font-weight:{% if i == 2 %}600{% else %}400{% endif %};
+=======
           <span style="font-size:.68rem;font-weight:{% if i == 2 %}600{% else %}400{% endif %};
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
                        color:{% if i == 2 %}var(--g700){% elif i == 1 %}var(--success){% else %}var(--n400){% endif %};
                        margin-left:.3rem;white-space:nowrap;">{{ label }}</span>
           {% if not loop.last %}<div style="flex:1;height:1px;background:{% if i == 1 %}var(--g300){% else %}var(--border){% endif %};margin:0 .4rem;"></div>{% endif %}

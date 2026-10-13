@@ -334,3 +334,67 @@ function previewPassportPhoto(input) {
   };
   reader.readAsDataURL(file);
 }
+<<<<<<< HEAD
+
+
+/* ── Responsive helpers ─────────────────────────────────────── */
+(function () {
+  /* Off-canvas sidebar (tablets / phones) */
+  function setNav(open) {
+    document.body.classList.toggle('sidebar-open', open);
+    var t = document.getElementById('navToggle');
+    if (t) {
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      var i = t.querySelector('i');
+      if (i) i.className = open ? 'bi bi-x-lg' : 'bi bi-list';
+    }
+  }
+
+  /* Wrap every table in a horizontal scroller so wide tables swipe
+     instead of being clipped or stretching the whole page. */
+  function wrapTables() {
+    document.querySelectorAll('table').forEach(function (tbl) {
+      if (tbl.closest('.table-scroll') || tbl.closest('.no-scroll-wrap')) return;
+      var p = tbl.parentElement;
+      if (p && p.style && /auto|scroll/.test(p.style.overflowX || p.style.overflow || '')) {
+        p.classList.add('table-scroll');
+      } else {
+        var w = document.createElement('div');
+        w.className = 'table-scroll';
+        tbl.parentNode.insertBefore(w, tbl);
+        w.appendChild(tbl);
+      }
+      /* give multi-column tables a sensible minimum so they scroll, not crush */
+      var row = tbl.querySelector('thead tr') || tbl.querySelector('tr');
+      var cols = row ? row.children.length : 0;
+      if (cols >= 4) tbl.style.minWidth = Math.min(cols * 105, 1100) + 'px';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    wrapTables();
+
+    var toggle   = document.getElementById('navToggle');
+    var backdrop = document.getElementById('sidebarBackdrop');
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        setNav(!document.body.classList.contains('sidebar-open'));
+      });
+    }
+    if (backdrop) backdrop.addEventListener('click', function () { setNav(false); });
+
+    /* Close the drawer after choosing a page */
+    document.querySelectorAll('.sidebar a').forEach(function (a) {
+      a.addEventListener('click', function () { setNav(false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setNav(false);
+    });
+    /* Reset when growing back to desktop width */
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 1024) setNav(false);
+    });
+  });
+})();
+=======
+>>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
