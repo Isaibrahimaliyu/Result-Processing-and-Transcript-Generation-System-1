@@ -334,7 +334,6 @@ function previewPassportPhoto(input) {
   };
   reader.readAsDataURL(file);
 }
-<<<<<<< HEAD
 
 
 /* ── Responsive helpers ─────────────────────────────────────── */
@@ -396,5 +395,3 @@ function previewPassportPhoto(input) {
     });
   });
 })();
-=======
->>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7

@@ -652,11 +652,7 @@ img{display:block;max-width:100%}
 .auth-feature-text{font-size:.77rem;color:rgba(255,255,255,.55);line-height:1.5}
 .auth-feature-text strong{color:rgba(255,255,255,.85);display:block;margin-bottom:1px;font-size:.79rem}
 .auth-copy{position:relative;z-index:1;margin-top:auto;padding-top:1.5rem;font-size:.65rem;color:rgba(255,255,255,.2)}
-<<<<<<< HEAD
 /* (mobile auth layout lives in the Responsive section at the end of this file) */
-=======
-@media(max-width:900px){.auth-hero{display:none}.auth-wrap{justify-content:center;padding:1.25rem}}
->>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
 
 /* Form fields matching the portal's green-accented style */
 .auth-field{margin-bottom:1.3rem}
@@ -805,7 +801,6 @@ img{display:block;max-width:100%}
 .pager-btn.active{background:var(--g600);border-color:var(--g600);color:#fff}
 .pager-btn.disabled{opacity:.4;pointer-events:none}
 .pager-ellipsis{color:var(--tx-muted);padding:0 .25rem;font-size:.8rem}
-<<<<<<< HEAD
 
 
 /* ================================================================
@@ -1034,5 +1029,3 @@ img,video,canvas,svg{max-width:100%}
   .auth-wrap{align-items:flex-start}
   .auth-hero{padding-top:1rem}
 }
-=======
->>>>>>> 87179446e58d61e49b8b08f3c9e0b7f83ff9ffd7
