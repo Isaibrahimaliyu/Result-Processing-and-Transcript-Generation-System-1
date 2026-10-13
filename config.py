@@ -33,6 +33,34 @@ IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("SERVERLESS"))
 WRITABLE_DIR  = "/tmp" if IS_SERVERLESS else os.path.dirname(os.path.abspath(__file__))
 
 
+AIVEN_CA_PEM = """-----BEGIN CERTIFICATE-----
+MIIERDCCAqygAwIBAgIUJ/Tn3aGRzFxacDd0oTihL40RTrswDQYJKoZIhvcNAQEM
+BQAwOjE4MDYGA1UEAwwvMDMyMzVjMTktMDk3My00NmVmLTlkMjQtMzVkODU2MjJl
+YjVhIFByb2plY3QgQ0EwHhcNMjYxMDEyMTY1MDE4WhcNMzYxMDA5MTY1MDE4WjA6
+MTgwNgYDVQQDDC8wMzIzNWMxOS0wOTczLTQ2ZWYtOWQyNC0zNWQ4NTYyMmViNWEg
+UHJvamVjdCBDQTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBAJ+9noBX
+UYvgLuFLX9G19ljwDzGr4FWzPT+SSy97/MfJXtKcdE9BhzPFg9tIrD0ECibMoV7Z
+j7o7Qx1SJeJa7n4iEmIy+QL2B5M33b/ciFN06w9H4LFesv5HfQ+k8no7Ebdq8oMA
+FXUAgFGYYJmvrH/s914qUnV3uRQESQfbc4b+BnI+9nUhcH7OUDU18XusAR49QpI1
+qU/8rhl0Oheoud/2QYMUTUtdWjaMeGap9CjOkXN4wD4JofvQJQilLxW3R+Ttj/Qe
+XX4UWs+CWIpq4GLqlt+6KCEs/o7lQc79qaXV0n41vEPFhVAyv5bcXJ7l1Yh7UP/L
+mqZGJeytYTh4+sUtnW5de1NUxOsRCQwhVuREVKW5KSZtXUnFiKENDn1KQer4sg39
+bQEe1thBiYxWFhK+DmfO/DX2uTl/Oq2gVg8Amk+TnITENF+OLM03OfAyZKE+CGsd
+yqCuzfU6+MILEggm6DxpwI6RVGiKZEkHEDDyqI5qpHrA7Xl74uwjd2q0bwIDAQAB
+o0IwQDAdBgNVHQ4EFgQUtubSjWknbsM1AjdkKa7Q/ezb8cYwEgYDVR0TAQH/BAgw
+BgEB/wIBADALBgNVHQ8EBAMCAQYwDQYJKoZIhvcNAQEMBQADggGBAIErLI/4BsZZ
+cNntqypUm13L8eYsa61pQnYStzPcw+J5kG1peg20ZPvRYsJ3MHhiTbg281G0y+bL
+P/KSS4Un0280/oVakonjXDR8eYdH7DxjmNnveHccsZVxtSEWcWAZ66kZ4rXx5WHn
+T6gaJFgY+o59n3coPDEAj3crdB5AgtCVi/ebYWJdyZVbP9S5qye4HgR7gjHQQ5mE
+652O7X1su+s3oCFo/6SyZ4oygkedgz3XiSjuP2j+H0GjZWcPWGOajSYEbq+Q3YlP
+NGmbgKtXJHfhB0bIs5/fj9lE4wi9bDDsQwJNWqy7v5SqRDzhlpMmANqin+0d/m6o
+Qxe10oT2bQihls08aQTAZOyxoaJaJ9UkdxRcLavW+05dKvNiqtozrK4Jm6dI4EYh
+2zJED5YI32aaoyWL5tvYI5hvc8MMAHYUMujZ2PYsAy2EOLppDCOOEFtDw6nOV6WX
+a6lrXKMrVeqJhCu2Nr3UGZQEYIIAk8ySSoYbkFvocE8PKBwCE2aEmA==
+-----END CERTIFICATE-----
+"""
+
+
 def _env_bool(name: str, default: str = "false") -> bool:
     return os.environ.get(name, default).strip().lower() in ("1", "true", "yes")
 
@@ -65,8 +93,25 @@ class Config:
     }
     # Hosted MySQL providers require TLS. Set DB_SSL=true (and optionally DB_SSL_CA
     # to a CA certificate path) to enable it.
+    # Aiven signs its servers with a private project CA that is NOT in the system
+    # trust store, so a default verifying context fails with
+    # "certificate verify failed" and every DB query becomes a 500.
+    #   DB_SSL_CA_PEM = full text of Aiven's CA certificate (best on Vercel)
+    #   DB_SSL_CA     = path to a CA file (local use)
+    #   neither       = encrypted connection WITHOUT certificate verification
     if _env_bool("DB_SSL"):
-        _ssl_ctx = ssl.create_default_context(cafile=os.environ.get("DB_SSL_CA") or None)
+        _ca_pem  = os.environ.get("DB_SSL_CA_PEM", "").replace("\\n", "\n").strip()
+        _ca_file = os.environ.get("DB_SSL_CA", "").strip()
+        if _ca_pem:
+            _ssl_ctx = ssl.create_default_context(cadata=_ca_pem)
+            _ssl_ctx.check_hostname = False   # Aiven CA cert is not issued per-hostname
+        elif _ca_file:
+            _ssl_ctx = ssl.create_default_context(cafile=_ca_file)
+            _ssl_ctx.check_hostname = False
+        else:
+            # Built-in Aiven project CA (public certificate, not a secret)
+            _ssl_ctx = ssl.create_default_context(cadata=AIVEN_CA_PEM)
+            _ssl_ctx.check_hostname = False
         SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {"ssl": _ssl_ctx}
 
     # ── Sessions ──────────────────────────────────────────────────────────
